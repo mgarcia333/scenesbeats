@@ -112,15 +112,35 @@ function App() {
           {errorMsg && <p style={{ color: '#ff4d4d' }}>{errorMsg}</p>}
 
           {recommendation && (
-            <div style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: '1.5rem', borderRadius: '8px', textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
-              <h3 style={{ color: '#1db954' }}>Vibra actual:</h3>
-              <p>{recommendation.vibra}</p>
+            <div style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: '1.5rem', borderRadius: '8px', textAlign: 'left', maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <h3 style={{ color: '#1db954', marginTop: 0 }}>Vibra actual de tu música:</h3>
+                <p>{recommendation.vibra}</p>
+              </div>
               
-              <h3 style={{ color: '#1ed760' }}>Película Recomendada:</h3>
-              <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🍿 {recommendation.pelicula}</p>
-              
-              <h3 style={{ color: '#1db954' }}>¿Por qué?</h3>
-              <p>{recommendation.motivo}</p>
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {recommendation.poster_url && (
+                    <img 
+                      src={recommendation.poster_url} 
+                      alt={`Póster de ${recommendation.pelicula}`} 
+                      style={{ width: '200px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} 
+                    />
+                )}
+                
+                <div style={{ flex: 1, minWidth: '250px' }}>
+                  <h3 style={{ color: '#1ed760', marginTop: 0 }}>Película Recomendada:</h3>
+                  <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '0.5rem 0' }}>🍿 {recommendation.pelicula}</p>
+                  
+                  {recommendation.sinopsis && (
+                    <p style={{ fontSize: '0.9rem', color: '#ccc', fontStyle: 'italic', marginBottom: '1rem' }}>
+                      {recommendation.sinopsis}
+                    </p>
+                  )}
+
+                  <h3 style={{ color: '#1db954' }}>¿Por qué?</h3>
+                  <p>{recommendation.motivo}</p>
+                </div>
+              </div>
             </div>
           )}
 

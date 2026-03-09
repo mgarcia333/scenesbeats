@@ -60,9 +60,41 @@ ${trackContext}
 
     const recommendationText = completion.text;
     const recommendationJSON = JSON.parse(recommendationText);
+    const movieTitle = recommendationJSON.pelicula;
 
-    // 5. Send back to the client
-    res.json(recommendationJSON);
+    // 5. Fetch Movie Details from TMDB
+    let posterUrl = null;
+    let overview = "";
+
+    try {
+      if (movieTitle && process.env.TMDB_API_KEY) {
+        const tmdbRes = await axios.get(`https://api.themoviedb.org/3/search/movie`, {
+          params: {
+            api_key: process.env.TMDB_API_KEY,
+            query: movieTitle,
+            language: 'es-ES',
+            page: 1
+          }
+        });
+
+        if (tmdbRes.data.results && tmdbRes.data.results.length > 0) {
+          const movieData = tmdbRes.data.results[0];
+          overview = movieData.overview;
+          if (movieData.poster_path) {
+            posterUrl = `https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
+          }
+        }
+      }
+    } catch (tmdbError) {
+      console.error("TMDB Error (non-fatal):", tmdbError.message);
+    }
+
+    // 6. Send back to the client
+    res.json({
+        ...recommendationJSON,
+        poster_url: posterUrl,
+        sinopsis: overview
+    });
 
   } catch (error) {
     console.error('Error generating recommendation:', error);
