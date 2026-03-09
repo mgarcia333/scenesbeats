@@ -7,6 +7,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recommendation, setRecommendation] = useState(null);
+  const [loadingRec, setLoadingRec] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     // Check if user is authenticated or if we just redirected back
@@ -45,7 +48,29 @@ function App() {
     await fetch('/api/auth/logout', { method: 'POST' });
     setIsAuthenticated(false);
     setUser(null);
+    setRecommendation(null);
     window.location.href = '/';
+  };
+
+  const getRecommendation = async () => {
+    setLoadingRec(true);
+    setErrorMsg("");
+    setRecommendation(null);
+    try {
+      const res = await fetch('/api/recommendation/generate', { method: 'POST' });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setErrorMsg(data.error || "Error al obtener recomendación.");
+      } else {
+        setRecommendation(data);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Error de red al conectar con el servidor.");
+    } finally {
+      setLoadingRec(false);
+    }
   };
 
   if (loading) {
@@ -72,10 +97,38 @@ function App() {
             />
           )}
           <h2>¡Hola, {user?.name || "invitado"}! Estás conectado a Spotify 🎧</h2>
-          <p>Próximamente: Tus recomendaciones de cine basadas en tu música.</p>
-          <button onClick={handleLogout} className="logout-btn">
-            Cerrar sesión
-          </button>
+          
+          <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+            <button 
+              onClick={getRecommendation} 
+              className="spotify-btn"
+              disabled={loadingRec}
+              style={{ fontSize: '1.2rem', padding: '1rem 2rem', backgroundColor: loadingRec ? '#ccc' : '#1db954', color: '#000' }}
+            >
+              {loadingRec ? "Analizando tu vibra..." : "✨ Dime qué película ver hoy"}
+            </button>
+          </div>
+
+          {errorMsg && <p style={{ color: '#ff4d4d' }}>{errorMsg}</p>}
+
+          {recommendation && (
+            <div style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: '1.5rem', borderRadius: '8px', textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
+              <h3 style={{ color: '#1db954' }}>Vibra actual:</h3>
+              <p>{recommendation.vibra}</p>
+              
+              <h3 style={{ color: '#1ed760' }}>Película Recomendada:</h3>
+              <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🍿 {recommendation.pelicula}</p>
+              
+              <h3 style={{ color: '#1db954' }}>¿Por qué?</h3>
+              <p>{recommendation.motivo}</p>
+            </div>
+          )}
+
+          <div style={{ marginTop: '3rem' }}>
+             <button onClick={handleLogout} className="logout-btn">
+               Cerrar sesión
+             </button>
+          </div>
         </div>
       )}
     </div>
