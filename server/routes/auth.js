@@ -44,7 +44,8 @@ router.get('/spotify/callback', async (req, res) => {
       secure: process.env.NODE_ENV === 'production'
     });
 
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+    console.log('Spotify login successful, redirecting to home.');
+    res.redirect(`${process.env.FRONTEND_URL}/`);
   } catch (error) {
     console.error('Error during Spotify Auth Callback:', error.response?.data || error.message);
     res.redirect(`${process.env.FRONTEND_URL}/?error=spotify_auth_failed`);
