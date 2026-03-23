@@ -1,0 +1,46 @@
+{
+  "search": {
+    "placeholder": "Busca películas o canciones...",
+    "movies": "Películas",
+    "music": "Música",
+    "noResults": "No hay resultados para '{{query}}'",
+    "searching": "Buscando..."
+  },
+  "home": {
+
+    "latestMovies": "Últimas Películas (En Cines)",
+    "myRecentMovies": "Mis Películas Recientes (Letterboxd)",
+    "recentSongs": "Tus Últimas Canciones",
+    "friendActivity": "Actividad de Amigos",
+    "welcomeTitle": "Tu música, tus películas.",
+    "welcomeSubtitle": "Conecta con Spotify para descubrir qué películas encajan con tu ritmo actual.",
+    "loginSpotify": "Entrar con Spotify"
+  },
+  "profile": {
+    "movies": "Películas",
+    "songs": "Canciones",
+    "friends": "Amigos",
+    "myLists": "Tus Listas",
+    "newList": "Nueva Lista",
+    "recentViews": "Últimas Vistas"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "appearance": "Apariencia",
+    "darkMode": "Modo Oscuro",
+    "darkModeDesc": "Reduce el brillo de la pantalla",
+    "language": "Idioma",
+    "languageDesc": "Selecciona tu idioma preferido",
+    "account": "Cuenta",
+    "logout": "Cerrar Sesión",
+    "enabled": "Activado",
+    "disabled": "Desactivado"
+  },
+  "nav": {
+    "home": "Inicio",
+    "community": "Comunidad",
+    "profile": "Perfil",
+    "today": "Hoy",
+    "settings": "Ajustes"
+  }
+}

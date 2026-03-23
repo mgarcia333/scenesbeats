@@ -14,12 +14,14 @@
   "description": "",
   "dependencies": {
     "@google/genai": "^1.44.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.6",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.29.0",

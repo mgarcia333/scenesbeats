@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * Controller to generate a movie recommendation based on user's Spotify history.
@@ -7,12 +7,14 @@ import { GoogleGenAI } from '@google/genai';
 export const generateRecommendation = async (req, res) => {
   try {
     // Initialize Gemini Client
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     
     // 1. Fetch user's recently played tracks from Spotify
     const recentlyPlayedRes = await axios.get('https://api.spotify.com/v1/me/player/recently-played?limit=10', {
       headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
     });
+
     
     const items = recentlyPlayedRes.data.items;
     
@@ -40,17 +42,35 @@ ${trackContext}
 }`;
 
     // 4. Call Gemini
-    const completion = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            temperature: 0.7,
-            responseMimeType: "application/json"
-        }
+    console.log("Calling Gemini 1.5-flash via @google/generative-ai...");
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json"
+      }
     });
 
-    const recommendationText = completion.text;
-    const recommendationJSON = JSON.parse(recommendationText);
+    const response = await result.response;
+    let recommendationText = response.text();
+
+
+    // Clean markdown if present
+    recommendationText = recommendationText.replace(/```json|```/gi, '').trim();
+    
+    let recommendationJSON;
+    try {
+      recommendationJSON = JSON.parse(recommendationText);
+    } catch (parseError) {
+      console.error("Gemini JSON parse error:", parseError.message);
+      // Fallback recommendation
+      recommendationJSON = {
+        vibra: "Relajada y ecléctica",
+        pelicula: "La La Land",
+        motivo: "Tu música tiene una mezcla interesante que pide algo visualmente espectacular y emocional."
+      };
+    }
+
     const movieTitle = recommendationJSON.pelicula;
 
     // 5. Fetch Movie Details from TMDB
@@ -72,7 +92,7 @@ ${trackContext}
           const movieData = tmdbRes.data.results[0];
           overview = movieData.overview;
           if (movieData.poster_path) {
-            posterUrl = `https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
+            posterUrl = `https://image.tmdb.org/t/p/w780${movieData.poster_path}`;
           }
         }
       }
@@ -88,7 +108,43 @@ ${trackContext}
     });
 
   } catch (error) {
-    console.error('Error generating recommendation:', error);
-    res.status(500).json({ error: 'Failed to generate recommendation' });
+    console.error('GENAI API Error:', error);
+    if (error.status === 404) {
+      console.error('Model not found. Ensure "gemini-2.5-flash" is the correct name.');
+    }
+    res.status(500).json({ error: 'Failed to generate recommendation', details: error.message });
+  }
+};
+
+/**
+ * Controller to fetch trending movies from TMDB.
+ */
+export const getTrendingMovies = async (req, res) => {
+  try {
+    if (!process.env.TMDB_API_KEY) {
+      return res.status(500).json({ error: 'TMDB API Key missing' });
+    }
+
+    const response = await axios.get(`https://api.themoviedb.org/3/movie/now_playing`, {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        language: 'es-ES',
+        page: 1
+      }
+    });
+
+    const movies = response.data.results.slice(0, 10).map(movie => ({
+      id: movie.id,
+      name: movie.title || movie.original_title,
+      year: movie.release_date?.split('-')[0] || 'N/A',
+      rating: movie.vote_average ? (movie.vote_average / 2).toFixed(1) : null,
+      poster: movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : null
+
+    }));
+
+    res.json(movies);
+  } catch (error) {
+    console.error('Error fetching trending movies:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch trending movies' });
   }
 };

@@ -36,6 +36,10 @@ app.use("/api/spotify", spotifyRoutes);
 import recommendationRoutes from "./routes/recommendation.js";
 app.use("/api/recommendation", recommendationRoutes);
 
+import movieRoutes from "./routes/movieRoutes.js";
+app.use("/api/movie", movieRoutes);
+
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "Scenes & Beats API" });
 });

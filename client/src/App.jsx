@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
 import Navbar from './components/Navbar';
 import Home from './views/Home';
 import Community from './views/Community';
@@ -8,12 +9,13 @@ import Settings from './views/Settings';
 import Login from './views/Login';
 import Register from './views/Register';
 import './App.css'; 
+import './i18n';
 
 function App() {
   return (
     <Router>
       <div className="app-container">
-        <Navbar />
+        <Header />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -25,6 +27,7 @@ function App() {
             <Route path="/register" element={<Register />} />
           </Routes>
         </main>
+        <Navbar />
       </div>
     </Router>
   );

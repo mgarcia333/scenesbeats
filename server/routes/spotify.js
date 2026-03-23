@@ -1,5 +1,5 @@
 import express from 'express';
-import { getTopItems, getRecentlyPlayed, getAudioFeatures, getRecommendations } from '../controllers/spotifyController.js';
+import { getTopItems, getRecentlyPlayed, getAudioFeatures, getRecommendations, searchSpotify } from '../controllers/spotifyController.js';
 import { requireSpotifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -24,6 +24,12 @@ router.get('/recently-played', getRecentlyPlayed);
  * @desc    Get Audio Features for Multiple Tracks
  */
 router.get('/audio-features', getAudioFeatures);
+
+/**
+ * @route   GET /api/spotify/search
+ * @desc    Search for Spotify tracks or artists
+ */
+router.get('/search', searchSpotify);
 
 /**
  * @route   GET /api/spotify/recommendations

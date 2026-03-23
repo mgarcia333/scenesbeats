@@ -73,3 +73,23 @@ export const getRecommendations = async (req, res) => {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Failed to fetch recommendations' });
   }
 };
+/**
+ * Controller to search for Spotify tracks or artists.
+ */
+export const searchSpotify = async (req, res) => {
+  const { query, type = 'track' } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    const response = await axios.get(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=20`, {
+      headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Spotify Search Error:', error.response?.data || error.message);
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Search failed' });
+  }
+};

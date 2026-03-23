@@ -1,23 +1,36 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Home, Users, Sparkles, User, Settings } from 'lucide-react';
 
 const Navbar = () => {
+  const { t } = useTranslation();
+
   return (
-    <nav className="navbar">
-      <div className="nav-brand">
-        <Link to="/">ScenesBeats</Link>
-      </div>
-      <ul className="nav-links">
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/community">Community</Link></li>
-        <li><Link to="/profile">Profile</Link></li>
-        <li><Link to="/today">Today</Link></li>
-        <li><Link to="/settings">Settings</Link></li>
-        <li><Link to="/login">Login</Link></li>
-        <li><Link to="/register">Register</Link></li>
-      </ul>
+    <nav className="bottom-navbar">
+      <NavLink to="/" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+        <span className="nav-icon"><Home size={24} /></span>
+        <span className="nav-label">{t('nav.home')}</span>
+      </NavLink>
+      <NavLink to="/community" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+        <span className="nav-icon"><Users size={24} /></span>
+        <span className="nav-label">{t('nav.community')}</span>
+      </NavLink>
+      <NavLink to="/today" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+        <span className="nav-icon"><Sparkles size={24} /></span>
+        <span className="nav-label">{t('nav.today')}</span>
+      </NavLink>
+      <NavLink to="/profile" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+        <span className="nav-icon"><User size={24} /></span>
+        <span className="nav-label">{t('nav.profile')}</span>
+      </NavLink>
+      <NavLink to="/settings" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+        <span className="nav-icon"><Settings size={24} /></span>
+        <span className="nav-label">{t('nav.settings')}</span>
+      </NavLink>
     </nav>
   );
 };
 
 export default Navbar;
+

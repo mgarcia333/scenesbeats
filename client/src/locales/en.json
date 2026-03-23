@@ -1,0 +1,48 @@
+{
+  "search": {
+    "placeholder": "Search movies or songs...",
+    "movies": "Movies",
+    "music": "Music",
+    "noResults": "No results found for '{{query}}'",
+    "searching": "Searching..."
+  },
+  "home": {
+
+    "loading": "Loading...",
+    "latestMovies": "Latest Movies (Trending)",
+    "myRecentMovies": "My Recent Watches (Letterboxd)",
+    "recentSongs": "Recent Songs (Spotify)",
+
+    "friendActivity": "Friend Activity",
+    "welcomeTitle": "Your music, your movies.",
+    "welcomeSubtitle": "Connect with Spotify to discover which movies match your current rhythm.",
+    "loginSpotify": "Login with Spotify"
+  },
+  "profile": {
+    "movies": "Movies",
+    "songs": "Songs",
+    "friends": "Friends",
+    "myLists": "My Lists",
+    "newList": "New List",
+    "recentViews": "Recent Views"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "darkMode": "Dark Mode",
+    "darkModeDesc": "Reduces screen brightness",
+    "language": "Language",
+    "languageDesc": "Select your preferred language",
+    "account": "Account",
+    "logout": "Logout",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "nav": {
+    "home": "Home",
+    "community": "Community",
+    "profile": "Profile",
+    "today": "Today",
+    "settings": "Settings"
+  }
+}
