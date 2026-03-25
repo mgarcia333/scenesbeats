@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Music, Clapperboard, Film, Star, PlusCircle, Circle, Check, Plus } from 'lucide-react';
+import { Music, Clapperboard, Film, PlusCircle, Circle, Check, Plus, Trash2 } from 'lucide-react';
+import { MovieCard } from '../components/Cards';
+import HorizontalScroll from '../components/HorizontalScroll';
+import LoadingScreen from '../components/LoadingScreen';
+import SearchModal from '../components/SearchModal';
 
 const Profile = () => {
   const { t } = useTranslation();
@@ -8,11 +12,14 @@ const Profile = () => {
   const [lbMovies, setLbMovies] = useState([]);
   const [loadingLB, setLoadingLB] = useState(false);
   
-  // Drag to scroll state
-  const scrollRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  // Favorites State
+  const [favMovies, setFavMovies] = useState(JSON.parse(localStorage.getItem('fav_movies') || '[]'));
+  const [favSongs, setFavSongs] = useState(JSON.parse(localStorage.getItem('fav_songs') || '[]'));
+  const [favAlbums, setFavAlbums] = useState(JSON.parse(localStorage.getItem('fav_albums') || '[]'));
+
+  // Search Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('movie'); // 'movie', 'song', 'album'
 
   const [user, setUser] = useState({
     name: "Moisés García",
@@ -68,130 +75,162 @@ const Profile = () => {
     }
   };
 
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    setStartX(e.pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
+  const openSearch = (type) => {
+    setModalType(type);
+    setModalOpen(true);
   };
 
-  const handleMouseLeave = () => {
-    setIsDragging(false);
+  const handleSelectFav = (item) => {
+    let newState = [];
+    if (modalType === 'movie') {
+      if (favMovies.length >= 5) return;
+      newState = [...favMovies, item];
+      setFavMovies(newState);
+      localStorage.setItem('fav_movies', JSON.stringify(newState));
+    } else if (modalType === 'song') {
+      if (favSongs.length >= 5) return;
+      newState = [...favSongs, item];
+      setFavSongs(newState);
+      localStorage.setItem('fav_songs', JSON.stringify(newState));
+    } else if (modalType === 'album') {
+      if (favAlbums.length >= 5) return;
+      newState = [...favAlbums, item];
+      setFavAlbums(newState);
+      localStorage.setItem('fav_albums', JSON.stringify(newState));
+    }
+    setModalOpen(false);
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handleRemoveFav = (type, id) => {
+    let newState = [];
+    if (type === 'movie') {
+      newState = favMovies.filter(m => m.id !== id);
+      setFavMovies(newState);
+      localStorage.setItem('fav_movies', JSON.stringify(newState));
+    } else if (type === 'song') {
+      newState = favSongs.filter(s => s.id !== id);
+      setFavSongs(newState);
+      localStorage.setItem('fav_songs', JSON.stringify(newState));
+    } else if (type === 'album') {
+      newState = favAlbums.filter(a => a.id !== id);
+      setFavAlbums(newState);
+      localStorage.setItem('fav_albums', JSON.stringify(newState));
+    }
   };
 
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // Scroll speed
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const renderStars = (rating) => {
-    if (!rating) return <div className="stars-container" style={{ opacity: 0 }}><Star size={12} /></div>;
-    const num = parseFloat(rating);
-    const fullStars = Math.floor(num);
-    const halfStar = num % 1 !== 0;
-    return (
-      <div className="stars-container">
-        {[...Array(fullStars)].map((_, i) => <Star key={i} size={12} fill="currentColor" style={{ display: 'inline' }} />)}
-        {halfStar ? "½" : ""}
+  const renderFavSection = (title, items, type) => (
+    <section className="feed-section" style={{ marginTop: '2.5rem' }}>
+      <h2 className="section-title">{title}</h2>
+      <div className="favorites-grid">
+        {items.map((item) => (
+          <div key={item.id} className="fav-item-card" onClick={() => handleRemoveFav(type, item.id)}>
+            <img src={item.poster || item.artwork} alt={item.name || item.title} className="fav-item-img" />
+            <div className="dot-badge"><Plus size={12} style={{ transform: 'rotate(45deg)' }} /></div>
+          </div>
+        ))}
+        {items.length < 5 && [...Array(5 - items.length)].map((_, i) => (
+          <div key={`empty-${type}-${i}`} className="fav-slot" onClick={() => openSearch(type)}>
+            <Plus size={24} />
+          </div>
+        ))}
       </div>
-    );
-  };
+    </section>
+  );
 
   return (
     <div className="view-container">
-      <div className="profile-header">
-        <img src={user.avatar} alt={user.name} className="profile-avatar-large" />
+      <div className="profile-header glass" style={{ borderRadius: '24px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', padding: '2.5rem' }}>
+        <img src={user.avatar} alt={user.name} className="profile-avatar-large" style={{ border: '4px solid var(--primary-color)', boxShadow: '0 0 20px rgba(0,122,255,0.3)' }} />
         <div className="profile-info-main">
-          <h2 className="profile-name-large">{user.name}</h2>
-          <p className="hero-subtitle">@{user.username}</p>
+          <h2 className="profile-name-large" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{user.name}</h2>
+          <p className="hero-subtitle" style={{ fontSize: '1.1rem', opacity: 0.8, color: 'var(--accent-blue)' }}>@{user.username}</p>
           
-          <div className="profile-stats">
+          <div className="profile-stats" style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '16px', marginTop: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div className="stat-item">
-              <span className="stat-value">{user.stats.movies}</span>
-              <span className="stat-label">{t('profile.movies')}</span>
+              <span className="stat-label" style={{ letterSpacing: '0.1em' }}>{t('profile.movies')}</span>
+              <span className="stat-value" style={{ fontSize: '1.4rem' }}>{user.stats.movies}</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-value">{user.stats.songs}</span>
-              <span className="stat-label">{t('profile.songs')}</span>
+            <div className="stat-item" style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.5rem' }}>
+              <span className="stat-label" style={{ letterSpacing: '0.1em' }}>{t('profile.songs')}</span>
+              <span className="stat-value" style={{ fontSize: '1.4rem' }}>{user.stats.songs > 999 ? (user.stats.songs/1000).toFixed(1) + 'k' : user.stats.songs}</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-value">{user.stats.friends}</span>
-              <span className="stat-label">{t('profile.friends')}</span>
+            <div className="stat-item" style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.5rem' }}>
+              <span className="stat-label" style={{ letterSpacing: '0.1em' }}>{t('profile.friends')}</span>
+              <span className="stat-value" style={{ fontSize: '1.4rem' }}>{user.stats.friends}</span>
             </div>
           </div>
 
-          <div className="connections-grid">
+          <div className="connections-grid" style={{ marginTop: '1.5rem' }}>
             {user.connections.map(conn => (
               <div 
                 key={conn.id} 
                 className={`connection-badge ${conn.connected ? 'connected' : 'disconnected'}`}
                 onClick={conn.id === 'letterboxd' ? handleConnectLB : undefined}
-                style={{ cursor: conn.id === 'letterboxd' ? 'pointer' : 'default' }}
+                style={{ 
+                  cursor: conn.id === 'letterboxd' ? 'pointer' : 'default',
+                  background: conn.connected ? 'rgba(0,122,255,0.15)' : 'rgba(255,255,255,0.05)',
+                  border: conn.connected ? '1px solid var(--primary-color)' : '1px solid rgba(255,255,255,0.1)',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '100px'
+                }}
               >
-                <span className={`icon-${conn.id}`}>{conn.icon}</span>
-                {conn.name}
-                {conn.connected ? <Check size={14} style={{ marginLeft: '4px' }} /> : <Plus size={14} style={{ marginLeft: '4px' }} />}
+                <span className={`icon-${conn.id}`} style={{ marginRight: '6px' }}>{conn.icon}</span>
+                <span style={{ fontWeight: '700' }}>{conn.name}</span>
+                {conn.connected ? <Check size={14} style={{ marginLeft: '6px', color: 'var(--accent-green)' }} /> : <Plus size={14} style={{ marginLeft: '6px' }} />}
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <section className="feed-section">
+      {renderFavSection("Mis 5 Películas Favoritas", favMovies, 'movie')}
+      {renderFavSection("Mis 5 Canciones Favoritas", favSongs, 'song')}
+      {renderFavSection("Mis 5 Álbumes Favoritos", favAlbums, 'album')}
+
+      <section className="feed-section" style={{ marginTop: '2.5rem' }}>
         <h2 className="section-title">{t('profile.myLists')}</h2>
-        <div className="horizontal-scroll">
-          <div className="activity-card" style={{ flex: '0 0 160px', height: '100px', justifyContent: 'center', alignItems: 'center' }}>
-            <PlusCircle size={24} style={{ marginBottom: '0.5rem' }} />
-            <span className="stat-label" style={{ fontSize: '0.65rem' }}>{t('profile.newList')}</span>
+        <HorizontalScroll>
+          <div className="activity-card glass" style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', borderRadius: '12px' }}>
+            <PlusCircle size={20} style={{ marginBottom: '0.4rem', color: 'var(--primary-color)' }} />
+            <span className="stat-label" style={{ fontSize: '0.6rem' }}>{t('profile.newList')}</span>
           </div>
-          <div className="activity-card" style={{ flex: '0 0 160px', height: '100px', justifyContent: 'center', alignItems: 'center' }}>
-            <Circle size={24} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-            <span className="stat-label" style={{ fontSize: '0.65rem' }}>Vibra Nocturna</span>
+          <div className="activity-card glass" style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', borderRadius: '12px' }}>
+            <Circle size={20} style={{ marginBottom: '0.4rem', opacity: 0.3 }} />
+            <span className="stat-label" style={{ fontSize: '0.6rem' }}>Vibra Nocturna</span>
           </div>
-        </div>
+        </HorizontalScroll>
       </section>
+
+      <SearchModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        onSelect={handleSelectFav} 
+        type={modalType}
+        title={modalType === 'movie' ? 'Películas' : modalType === 'song' ? 'Canciones' : 'Álbumes'}
+      />
 
       <section className="feed-section" style={{ marginTop: '2.5rem' }}>
         <h2 className="section-title">{t('profile.recentViews')}</h2>
-        <div 
-          className={`horizontal-scroll ${isDragging ? 'dragging' : ''}`}
-          ref={scrollRef}
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-        >
+        <HorizontalScroll>
           {loadingLB ? (
-            <div className="stat-label" style={{ padding: '2rem' }}>Cargando películas reales...</div>
+            <div style={{ padding: '2rem' }}>
+              <LoadingScreen message="Cargando películas reales..." />
+            </div>
           ) : lbMovies.length > 0 ? (
-            lbMovies.map(movie => (
-              <div key={movie.id} className="movie-card">
-                <a href={movie.link} target="_blank" rel="noopener noreferrer" style={{ pointerEvents: isDragging ? 'none' : 'auto' }}>
-                  <img src={movie.poster} className="movie-artwork" alt={movie.title} />
-                </a>
-                <div className="movie-name" title={movie.title}>{movie.title}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="movie-year">{movie.year}</div>
-                  {renderStars(movie.rating)}
-                </div>
-              </div>
+            lbMovies.map((movie, idx) => (
+              <MovieCard key={`profile-movie-${movie.id || idx}-${idx}`} movie={movie} />
             ))
           ) : (
             <div className="stat-label" style={{ padding: '2rem', opacity: 0.5 }}>
               {lbUsername ? "No se encontraron películas." : "Conecta tu Letterboxd para ver tus películas."}
             </div>
           )}
-        </div>
+        </HorizontalScroll>
       </section>
     </div>
   );
 };
+
 
 export default Profile;
 

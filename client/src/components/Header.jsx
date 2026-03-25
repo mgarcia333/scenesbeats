@@ -24,7 +24,11 @@ const Header = () => {
   return (
     <header className="app-header">
       <div className="header-spacer"></div>
-      <h1 className="header-title">Scenes & Beats</h1>
+      <div className="header-logo-container">
+        <Link to="/">
+          <img src="/titulo.png" alt="Scenes & Beats" className="header-logo-img" />
+        </Link>
+      </div>
       <div className="header-profile">
         <Link to="/profile">
           {user?.image ? (

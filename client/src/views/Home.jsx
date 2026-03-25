@@ -5,6 +5,7 @@ import HorizontalScroll from '../components/HorizontalScroll'
 import { MovieCard, SongCard } from '../components/Cards'
 import { Disc, Sparkles, Star } from 'lucide-react'
 
+import LoadingScreen from '../components/LoadingScreen'
 
 const Home = () => {
   const { t } = useTranslation();
@@ -105,7 +106,7 @@ const Home = () => {
   };
 
 
-  if (loading) return <div className="loading-screen">{t('home.loading')}</div>
+  if (loading) return <LoadingScreen message={t('home.loading')} />
 
 
   if (!isAuthenticated) {
@@ -114,7 +115,7 @@ const Home = () => {
         <div className="hero-section">
           <h2 className="hero-title">{t('home.welcomeTitle')}</h2>
           <p className="hero-subtitle">{t('home.welcomeSubtitle')}</p>
-          <button onClick={handleLogin} className="spotify-login-btn">
+          <button onClick={handleLogin} className="btn-glossy" style={{ padding: '1.2rem 3rem', fontSize: '1.1rem' }}>
             {t('home.loginSpotify')}
           </button>
         </div>
@@ -125,38 +126,39 @@ const Home = () => {
   return (
     <div className="view-container">
       {myRecentMovies.length > 0 && (
-        <section className="feed-section">
+        <section className="feed-section" style={{ marginBottom: '2.5rem' }}>
           <h2 className="section-title">{t('home.myRecentMovies')}</h2>
           <HorizontalScroll>
-            {myRecentMovies.map(movie => (
-              <MovieCard key={movie.id} movie={movie} />
+            {myRecentMovies.map((movie, idx) => (
+              <MovieCard key={`movie-${movie.id || idx}-${idx}`} movie={movie} />
             ))}
           </HorizontalScroll>
         </section>
       )}
 
       {recentSongs.length > 0 && (
-        <section className="feed-section" style={{ marginTop: myRecentMovies.length > 0 ? '2.5rem' : '0' }}>
+        <section className="feed-section" style={{ marginBottom: '2.5rem' }}>
           <h2 className="section-title">{t('home.recentSongs')}</h2>
           <HorizontalScroll>
-            {recentSongs.map(song => (
-              <SongCard key={song.id} song={song} />
+            {recentSongs.map((song, idx) => (
+              <SongCard key={`song-${song.id || idx}-${idx}`} song={song} />
             ))}
           </HorizontalScroll>
         </section>
       )}
 
 
-      <section className="feed-section" style={{ marginTop: '2.5rem' }}>
+      <section className="feed-section" style={{ marginBottom: '1.5rem' }}>
         <h2 className="section-title">{t('home.friendActivity')}</h2>
         <HorizontalScroll>
-          {friendActivity.map(item => (
-            <ActivityCard key={item.id} activity={item} />
+          {friendActivity.map((item, idx) => (
+            <ActivityCard key={`activity-${item.id || idx}-${idx}`} activity={item} />
           ))}
         </HorizontalScroll>
       </section>
     </div>
   )
+
 }
 
 

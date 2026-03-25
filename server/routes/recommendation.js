@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateRecommendation, getTrendingMovies } from '../controllers/recommendationController.js';
+import { generateRecommendation, getTrendingMovies, getInitialCommunityData } from '../controllers/recommendationController.js';
 import { requireSpotifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -17,5 +17,12 @@ router.post('/generate', requireSpotifyToken, generateRecommendation);
  * @access  Public
  */
 router.get('/trending', getTrendingMovies);
+
+/**
+ * @route   GET /api/recommendation/initial-data
+ * @desc    Get initial data for Community view (Trending movies + Recommended songs)
+ * @access  Private (Needs Spotify token for song recommendations)
+ */
+router.get('/initial-data', requireSpotifyToken, getInitialCommunityData);
 
 export default router;

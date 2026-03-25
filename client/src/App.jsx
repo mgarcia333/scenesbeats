@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './views/Home';
 import Community from './views/Community';
 import Profile from './views/Profile';
-import Today from './views/Today';
+import Recommendations from './views/Recommendations';
 import Settings from './views/Settings';
 import Login from './views/Login';
 import Register from './views/Register';
@@ -21,7 +21,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/community" element={<Community />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/today" element={<Today />} />
+            <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
