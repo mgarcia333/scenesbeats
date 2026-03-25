@@ -4,6 +4,7 @@ import { MovieCard, SongCard } from '../components/Cards';
 import HorizontalScroll from '../components/HorizontalScroll';
 import { Search, Clapperboard, Music, Filter, TrendingUp, Sparkles } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';
+import { movieApi, recommendationApi, nodeApi } from '../api';
 
 const Community = () => {
   const { t } = useTranslation();
@@ -21,11 +22,8 @@ const Community = () => {
   const fetchInitialData = async () => {
     setLoadingInitial(true);
     try {
-      const res = await fetch('/api/recommendation/initial-data', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setInitialData(data);
-      }
+      const res = await recommendationApi.getInitialData();
+      setInitialData(res.data);
     } catch (err) {
       console.error("Error fetching initial community data:", err);
     } finally {
@@ -41,24 +39,19 @@ const Community = () => {
     }
     setLoading(true);
     try {
-      const endpoint = searchType === 'movies' 
-        ? `/api/movie/search?query=${encodeURIComponent(query)}` 
-        : `/api/spotify/search?query=${encodeURIComponent(query)}&type=track`;
-      
-      const response = await fetch(endpoint, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        if (searchType === 'movies') {
-          setResults(data);
-        } else {
-          const songs = data.tracks.items.map(track => ({
-            id: track.id,
-            name: track.name,
-            artist: track.artists[0].name,
-            artwork: track.album.images[0]?.url
-          }));
-          setResults(songs);
-        }
+      if (searchType === 'movies') {
+        const res = await movieApi.search(query);
+        setResults(res.data);
+      } else {
+        const res = await nodeApi.get(`/spotify/search?query=${encodeURIComponent(query)}&type=track`);
+        const data = res.data;
+        const songs = data.tracks.items.map(track => ({
+          id: track.id,
+          name: track.name,
+          artist: track.artists[0].name,
+          artwork: track.album.images[0]?.url
+        }));
+        setResults(songs);
       }
     } catch (err) {
       console.error("Search error:", err);

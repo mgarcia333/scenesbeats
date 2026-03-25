@@ -2,9 +2,11 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Home, Users, Sparkles, User, Settings } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   return (
     <nav className="bottom-navbar">
@@ -26,7 +28,10 @@ const Navbar = () => {
         </span>
         <span className="nav-label">{t('nav.recommendations')}</span>
       </NavLink>
-      <NavLink to="/profile" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
+      <NavLink 
+        to={user ? "/profile" : "/login"} 
+        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
+      >
         <span className="nav-icon">
           <User size={24} />
         </span>

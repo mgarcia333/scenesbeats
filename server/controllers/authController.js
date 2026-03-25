@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getSpotifyAuthUrl } from '../utils/spotify.js';
+import { syncUserWithLaravel } from '../utils/laravel.js';
 
 /**
  * Controller for Spotify authentication.
@@ -37,6 +38,13 @@ export const spotifyCallback = async (req, res) => {
 
     const { access_token, refresh_token, expires_in } = response.data;
 
+    // Fetch Spotify profile to sync with Laravel
+    const spotifyProfile = await axios.get('https://api.spotify.com/v1/me', {
+      headers: { 'Authorization': `Bearer ${access_token}` }
+    });
+
+    await syncUserWithLaravel(spotifyProfile.data);
+
     res.cookie('spotify_access_token', access_token, {
       httpOnly: true,
       maxAge: expires_in * 1000,
@@ -73,9 +81,13 @@ export const getCurrentUser = async (req, res) => {
       }
     });
 
+    const laravelSync = await syncUserWithLaravel(response.data);
+
     return res.json({ 
       authenticated: true, 
       user: {
+        id: laravelSync.user.id, // Internal Laravel ID
+        spotify_id: response.data.id,
         name: response.data.display_name,
         email: response.data.email,
         image: response.data.images?.[0]?.url || null

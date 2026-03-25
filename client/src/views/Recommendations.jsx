@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Music, Film, Sparkles, AlertCircle } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';
+import { recommendationApi, favoritesApi } from '../api';
 
 const Recommendations = () => {
   const [loadingRec, setLoadingRec] = useState(false);
@@ -13,10 +14,27 @@ const Recommendations = () => {
     setErrorMsg("");
     setRecommendation(null);
 
-    // Prepare user context from localStorage
-    const lb_username = localStorage.getItem('lb_username');
-    const fav_movies = JSON.parse(localStorage.getItem('fav_movies') || '[]');
-    const fav_songs = JSON.parse(localStorage.getItem('fav_songs') || '[]');
+    // 1. Fetch User Data to get Laravel ID if possible
+    // (In a real app, this would be in a global context/store)
+    let lb_username = localStorage.getItem('lb_username');
+    let fav_movies = [];
+    let fav_songs = [];
+
+    try {
+      const authRes = await fetch('/api/auth/me'); // Simple fetch for now to check session
+      const authData = await authRes.json();
+      
+      if (authData.authenticated && authData.user.id) {
+        const favRes = await favoritesApi.getAll(authData.user.id);
+        const allFavs = favRes.data;
+        fav_movies = allFavs.filter(f => f.type === 'movie');
+        fav_songs = allFavs.filter(f => f.type === 'song');
+      }
+    } catch (e) {
+      console.warn("Could not fetch persistent favorites, falling back to local storage if available.");
+      fav_movies = JSON.parse(localStorage.getItem('fav_movies') || '[]');
+      fav_songs = JSON.parse(localStorage.getItem('fav_songs') || '[]');
+    }
 
     if (mode === 'letterboxd' && !lb_username) {
       setErrorMsg("Necesitas conectar tu Letterboxd en el Perfil para usar este modo.");
@@ -25,34 +43,21 @@ const Recommendations = () => {
     }
 
     try {
-      const res = await fetch('/api/recommendation/generate', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const res = await recommendationApi.generate({
           mode,
           lb_username,
-          fav_movies,
-          fav_songs
-        }),
-        credentials: 'include' 
+          fav_movies: fav_movies.map(m => ({ title: m.title })), // Simplify for Gemini
+          fav_songs: fav_songs.map(s => ({ title: s.title }))
       });
       
-      if (res.status === 401) {
-        setErrorMsg("Tu sesión de Spotify ha expirado. Por favor, ve al Inicio e inicia sesión de nuevo.");
-        setLoadingRec(false);
-        return;
-      }
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setErrorMsg(data.error || "Error al obtener recomendación.");
-      } else {
-        setRecommendation(data);
-      }
+      setRecommendation(res.data);
     } catch (err) {
       console.error(err);
-      setErrorMsg("Error de red al conectar con el servidor.");
+      if (err.response?.status === 401) {
+        setErrorMsg("Tu sesión de Spotify ha expirado. Por favor, ve al Inicio e inicia sesión de nuevo.");
+      } else {
+        setErrorMsg(err.response?.data?.error || "Error al obtener recomendación.");
+      }
     } finally {
       setLoadingRec(false);
     }
