@@ -1,25 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.authenticated) {
-            setUser(data.user);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching user for header:", err);
-      }
-    };
-    fetchUser();
-  }, []);
+  const avatarUrl = user?.avatar || user?.image;
 
   return (
     <header className="app-header">
@@ -31,8 +17,8 @@ const Header = () => {
       </div>
       <div className="header-profile">
         <Link to="/profile">
-          {user?.image ? (
-            <img src={user.image} alt="Profile" className="profile-bubble" />
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Profile" className="profile-bubble" />
           ) : (
             <div className="profile-bubble placeholder-avatar">
               {user?.name ? user.name.charAt(0) : '?'}

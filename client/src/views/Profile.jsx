@@ -6,31 +6,70 @@ import { MovieCard } from '../components/Cards';
 import HorizontalScroll from '../components/HorizontalScroll';
 import LoadingScreen from '../components/LoadingScreen';
 import SearchModal from '../components/SearchModal';
-import { authApi, favoritesApi, movieApi } from '../api';
+import MediaDetailsModal from '../components/MediaDetailsModal';
+import AddToListModal from '../components/AddToListModal';
+import { authApi, favoritesApi, movieApi, listsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { LogOut } from 'lucide-react';
 
 const Profile = () => {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [lbUsername, setLbUsername] = useState(localStorage.getItem('lb_username') || '');
+  const { user, loading, logout, updateUser } = useAuth();
+  // Search Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('movie'); // 'movie', 'song', 'album'
+  
+  // Letterboxd State
+  const [lbInput, setLbInput] = useState(user?.letterboxd_username || '');
   const [lbMovies, setLbMovies] = useState([]);
   const [loadingLB, setLoadingLB] = useState(false);
-  
+  const [syncingLB, setSyncingLB] = useState(false);
+  const [showLbInput, setShowLbInput] = useState(false);
+
   // Favorites State
   const [favMovies, setFavMovies] = useState([]);
   const [favSongs, setFavSongs] = useState([]);
   const [favAlbums, setFavAlbums] = useState([]);
   const [loadingFavs, setLoadingFavs] = useState(false);
 
-  // Search Modal State
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('movie'); // 'movie', 'song', 'album'
+  // Lists & Modals State
+  const [userLists, setUserLists] = useState([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [addToListModalOpen, setAddToListModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleSyncLetterboxd = async (e) => {
+    if (e) e.preventDefault();
+    if (!lbInput) return;
+    setSyncingLB(true);
+    try {
+      const res = await authApi.syncLetterboxd(lbInput, user.email);
+      if (res.data.status === 'success') {
+        updateUser({ letterboxd_username: lbInput });
+        localStorage.setItem('lb_username', lbInput);
+        fetchLetterboxd(lbInput);
+        setShowLbInput(false);
+      }
+    } catch (err) {
+      console.error("Error syncing Letterboxd:", err);
+    } finally {
+      setSyncingLB(false);
+    }
   };
 
   const fetchFavorites = async (userId) => {
@@ -58,7 +97,11 @@ const Profile = () => {
       setLbMovies(data);
       // Removed illegal setUser call as user is now global from AuthContext
     } catch (err) {
-      console.error("Error fetching Letterboxd:", err);
+      if (err.response?.status === 404) {
+        console.warn(`Letterboxd user "${username}" not found or has no recent activity.`);
+      } else {
+        console.error("Error fetching Letterboxd:", err);
+      }
     } finally {
       setLoadingLB(false);
     }
@@ -67,11 +110,39 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
         fetchFavorites(user.id);
-        if (lbUsername) {
-            fetchLetterboxd(lbUsername);
+        fetchUserLists(user.id);
+        const lbUser = user.letterboxd_username || localStorage.getItem('lb_username');
+        if (lbUser) {
+            fetchLetterboxd(lbUser);
+            if (!lbInput) setLbInput(lbUser);
         }
     }
   }, [user]);
+
+  const fetchUserLists = async (userId) => {
+    setLoadingLists(true);
+    try {
+      const res = await listsApi.getAll(userId);
+      setUserLists(res.data);
+    } catch (err) {
+      console.error("Error fetching lists", err);
+    } finally {
+      setLoadingLists(false);
+    }
+  };
+
+  const handleCardClick = (item, type) => {
+    setSelectedItem(item);
+    setSelectedType(type || 'movie');
+    setDetailsModalOpen(true);
+  };
+
+  const handleOpenAddToList = (item, type) => {
+    setSelectedItem(item);
+    setSelectedType(type || 'movie');
+    setDetailsModalOpen(false);
+    setAddToListModalOpen(true);
+  };
 
   const handleConnectLB = () => {
     const username = prompt("Introduce tu usuario de Letterboxd:", lbUsername);
@@ -183,29 +254,69 @@ const Profile = () => {
               </div>
 
               <div className="connections-grid" style={{ marginTop: '1.5rem' }}>
-                {(user.connections || [
-                    { id: 'spotify', name: 'Spotify', connected: !!user.spotify_id, icon: <Music size={16} /> },
+                {(user?.connections || [
+                    { id: 'spotify', name: 'Spotify', connected: !!user?.spotify_id, icon: <Music size={16} /> },
                     { id: 'tmdb', name: 'TMDB', connected: true, icon: <Clapperboard size={16} /> },
-                    { id: 'letterboxd', name: 'Letterboxd', connected: !!localStorage.getItem('lb_username'), icon: <Film size={16} /> }
+                    { id: 'letterboxd', name: 'Letterboxd', connected: !!user?.letterboxd_username, icon: <Film size={16} /> }
                 ]).map(conn => (
                   <div 
                     key={conn.id} 
                     className={`connection-badge ${conn.connected ? 'connected' : 'disconnected'}`}
-                    onClick={conn.id === 'letterboxd' ? handleConnectLB : undefined}
                     style={{ 
-                      cursor: conn.id === 'letterboxd' ? 'pointer' : 'default',
                       background: conn.connected ? 'rgba(0,122,255,0.15)' : 'rgba(255,255,255,0.05)',
                       border: conn.connected ? '1px solid var(--primary-color)' : '1px solid rgba(255,255,255,0.1)',
                       padding: '0.6rem 1.2rem',
-                      borderRadius: '100px'
+                      borderRadius: '100px',
+                      cursor: conn.id === 'letterboxd' ? 'pointer' : 'default'
+                    }}
+                    onClick={() => {
+                        if (conn.id === 'letterboxd') {
+                            if (!showLbInput && user?.letterboxd_username) {
+                                setLbInput(user.letterboxd_username);
+                            }
+                            setShowLbInput(!showLbInput);
+                        }
                     }}
                   >
                     <span className={`icon-${conn.id}`} style={{ marginRight: '6px' }}>{conn.icon}</span>
                     <span style={{ fontWeight: '700' }}>{conn.name}</span>
-                    {conn.connected ? <Check size={14} style={{ marginLeft: '6px', color: 'var(--accent-green)' }} /> : <Plus size={14} style={{ marginLeft: '6px' }} />}
+                    {conn.connected ? <Check size={14} style={{ marginLeft: '6px', color: 'var(--accent-green)' }} /> : (
+                        conn.id === 'letterboxd' ? <Plus size={14} style={{ marginLeft: '6px' }} /> : null
+                    )}
                   </div>
                 ))}
               </div>
+              
+              {/* Premium Letterboxd Input - Collapsible */}
+              {showLbInput && (
+                <div className="letterboxd-connect-premium glass" style={{ marginTop: '2rem', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                        <Film size={20} color="var(--primary-color)" style={{ marginRight: '10px' }} />
+                        <h3 style={{ fontSize: '1.2rem', margin: 0 }}>
+                            {user.letterboxd_username ? 'Cambiar perfil de Letterboxd' : 'Conecta tu Letterboxd'}
+                        </h3>
+                    </div>
+                    <form onSubmit={handleSyncLetterboxd} style={{ display: 'flex', gap: '10px' }}>
+                        <div className="input-group-premium glass" style={{ flex: 1, margin: 0, padding: '0.6rem 1rem' }}>
+                            <input 
+                                type="text" 
+                                placeholder="Tu usuario de Letterboxd" 
+                                value={lbInput}
+                                onChange={(e) => setLbInput(e.target.value)}
+                                style={{ background: 'transparent', border: 'none', color: 'white', width: '100%', outline: 'none' }}
+                            />
+                        </div>
+                        <button 
+                            type="submit" 
+                            className="btn-primary-premium" 
+                            style={{ padding: '0.6rem 1.5rem', minWidth: 'auto' }}
+                            disabled={syncingLB}
+                        >
+                            {syncingLB ? '...' : 'Conectar'}
+                        </button>
+                    </form>
+                </div>
+              )}
             </div>
           </div>
 
@@ -216,14 +327,36 @@ const Profile = () => {
           <section className="feed-section" style={{ marginTop: '2.5rem' }}>
             <h2 className="section-title">{t('profile.myLists')}</h2>
             <HorizontalScroll>
-              <div className="activity-card glass" style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', borderRadius: '12px' }}>
+              <div 
+                className="activity-card glass" 
+                onClick={() => handleOpenAddToList(null, null)}
+                style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', borderRadius: '12px', cursor: 'pointer' }}
+              >
                 <PlusCircle size={20} style={{ marginBottom: '0.4rem', color: 'var(--primary-color)' }} />
-                <span className="stat-label" style={{ fontSize: '0.6rem' }}>{t('profile.newList')}</span>
+                <span className="stat-label" style={{ fontSize: '0.6rem' }}>Crear Lista</span>
               </div>
-              <div className="activity-card glass" style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', borderRadius: '12px' }}>
-                <Circle size={20} style={{ marginBottom: '0.4rem', opacity: 0.3 }} />
-                <span className="stat-label" style={{ fontSize: '0.6rem' }}>Vibra Nocturna</span>
-              </div>
+              
+              {loadingLists ? (
+                  <span className="stat-label" style={{ padding: '2rem', opacity: 0.5 }}>Cargando listas...</span>
+              ) : userLists.map((list) => (
+                  <div 
+                    key={list.id} 
+                    className="activity-card glass" 
+                    onClick={() => navigate(`/list/${list.id}`)}
+                    style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', borderRadius: '12px', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}
+                  >
+                    {list.cover_image_url && (
+                        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${list.cover_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.3) blur(2px)', zIndex: 0 }} />
+                    )}
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                      <Circle size={20} style={{ marginBottom: '0.4rem', opacity: list.cover_image_url ? 1 : 0.3, color: list.cover_image_url ? 'white' : 'inherit' }} />
+                      <span className="stat-label" style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)', textAlign: 'center', padding: '0 10px', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {list.name}
+                      </span>
+                      <span style={{ fontSize: '0.55rem', opacity: 0.8, color: 'white' }}>{list.items ? list.items.length : 0} items</span>
+                    </div>
+                  </div>
+              ))}
             </HorizontalScroll>
           </section>
 
@@ -236,11 +369,11 @@ const Profile = () => {
                 </div>
               ) : lbMovies.length > 0 ? (
                 lbMovies.map((movie, idx) => (
-                  <MovieCard key={`profile-movie-${movie.id || idx}-${idx}`} movie={movie} />
+                  <MovieCard key={`profile-movie-${movie.id || idx}-${idx}`} movie={movie} onClick={handleCardClick} />
                 ))
               ) : (
                 <div className="stat-label" style={{ padding: '2rem', opacity: 0.5 }}>
-                  {lbUsername ? "No se encontraron películas." : "Conecta tu Letterboxd para ver tus películas."}
+                  {user?.letterboxd_username ? "No se encontraron películas. Prueba con otro usuario." : "Conecta tu Letterboxd para ver tus películas reales."}
                 </div>
               )}
             </HorizontalScroll>
@@ -254,6 +387,21 @@ const Profile = () => {
         onSelect={handleSelectFav} 
         type={modalType}
         title={modalType === 'movie' ? 'Películas' : modalType === 'song' ? 'Canciones' : 'Álbumes'}
+      />
+
+      <MediaDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        item={selectedItem}
+        type={selectedType}
+        onAddToList={handleOpenAddToList}
+      />
+
+      <AddToListModal
+        isOpen={addToListModalOpen}
+        onClose={() => setAddToListModalOpen(false)}
+        originalItem={selectedItem}
+        type={selectedType}
       />
     </div>
   );

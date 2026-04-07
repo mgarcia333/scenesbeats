@@ -44,10 +44,27 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "Scenes & Beats API" });
 });
 
+import SpotifyMonitor from "./utils/spotifyMonitor.js";
+import cookie from "cookie"; // You might need to install this if missing
+
 io.on("connection", (socket) => {
   console.log("Client connected via Socket.IO:", socket.id);
+  
+  // Extract Spotify token from cookies
+  const cookiesStr = socket.handshake.headers.cookie || "";
+  const cookies = cookie.parse(cookiesStr);
+  const spotifyToken = cookies.spotify_access_token;
+  
+  let monitor = null;
+  
+  if (spotifyToken) {
+    monitor = new SpotifyMonitor(io, socket, spotifyToken);
+    monitor.start(10000); // Poll every 10 secs
+  }
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
+    if (monitor) monitor.stop();
   });
 });
 

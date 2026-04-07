@@ -12,8 +12,12 @@ export const getLetterboxdRecent = async (req, res) => {
   }
 
   try {
-    const rssUrl = `https://letterboxd.com/${username}/rss/`;
-    const response = await axios.get(rssUrl);
+    const rssUrl = `https://letterboxd.com/${username}/rss`;
+    const response = await axios.get(rssUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
     const xml = response.data;
 
     const result = await parseStringPromise(xml, { explicitArray: false });
@@ -47,6 +51,9 @@ export const getLetterboxdRecent = async (req, res) => {
     res.json(movies);
   } catch (error) {
     console.error('Error fetching Letterboxd RSS:', error.message);
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: 'Letterboxd user not found' });
+    }
     res.status(500).json({ error: 'Failed to fetch Letterboxd data' });
   }
 };

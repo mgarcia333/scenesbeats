@@ -146,4 +146,21 @@ class AuthController extends Controller
             'user' => $user
         ]);
     }
+
+    public function syncLetterboxd(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|max:255',
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->firstOrFail();
+        $user->letterboxd_username = $request->username;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'user' => $user
+        ]);
+    }
 }

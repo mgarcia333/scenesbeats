@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, ArrowRight, Github } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowRight, Github, Music } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { authApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -102,6 +102,14 @@ const Login = () => {
                 theme="filled_black"
                 shape="pill"
             />
+            
+            <a 
+              href="/api/auth/spotify" 
+              className="btn-spotify"
+            >
+              <Music size={20} />
+              <span>Continuar con Spotify</span>
+            </a>
         </div>
 
         <p className="auth-footer">

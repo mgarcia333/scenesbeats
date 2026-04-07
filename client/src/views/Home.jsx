@@ -7,11 +7,15 @@ import { Disc, Sparkles, Star } from 'lucide-react'
 
 import LoadingScreen from '../components/LoadingScreen'
 
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { socket } from '../App';
+
 const Home = () => {
   const { t } = useTranslation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const [recentSongs, setRecentSongs] = useState([]);
   const [recentMovies, setRecentMovies] = useState([]);
   const [myRecentMovies, setMyRecentMovies] = useState([]);
@@ -50,31 +54,34 @@ const Home = () => {
     const initHome = async () => {
       try {
         setLoading(true);
-        const lbUser = localStorage.getItem('lb_username');
+        // Resolve Letterboxd username: Prefer user state, fallback to localStorage
+        const lbUser = user?.letterboxd_username || localStorage.getItem('lb_username');
         
         // Parallel fetch for public data
-        const [authRes, movieRes] = await Promise.all([
-          fetch('/api/auth/me', { credentials: 'include' }),
-          fetch('/api/recommendation/trending')
-        ]);
+        const movieRes = await fetch('/api/recommendation/trending');
 
-        if (authRes.ok) {
-           const authData = await authRes.json();
-           if (authData.authenticated) {
-              setIsAuthenticated(true);
-              setUser(authData.user);
-
-              const spotifyRes = await fetch('/api/spotify/recently-played', { credentials: 'include' });
-              if (spotifyRes.ok) {
-                 const spotifyData = await spotifyRes.json();
-                 const songs = spotifyData.items.map(item => ({
-                   id: item.track.id,
-                   name: item.track.name,
-                   artist: item.track.artists[0].name,
-                   artwork: item.track.album.images[0]?.url
-                 }));
-                 setRecentSongs(songs);
-              }
+        if (isAuthenticated && user) {
+           // Sync localStorage if it differs (useful for keeping views in sync)
+           if (user.letterboxd_username && localStorage.getItem('lb_username') !== user.letterboxd_username) {
+             localStorage.setItem('lb_username', user.letterboxd_username);
+           }
+           
+           try {
+             const spotifyRes = await fetch('/api/spotify/recently-played', { credentials: 'include' });
+             if (spotifyRes.ok) {
+                const spotifyData = await spotifyRes.json();
+                const songs = spotifyData.items.map(item => ({
+                  id: item.track.id,
+                  name: item.track.name,
+                  artist: item.track.artists[0].name,
+                  artwork: item.track.album.images[0]?.url
+                }));
+                setRecentSongs(songs);
+             } else if (spotifyRes.status === 401) {
+               console.warn("Spotify session is not active or unauthorized.");
+             }
+           } catch (err) {
+             console.error("Spotify fetch error:", err);
            }
         }
 
@@ -84,10 +91,17 @@ const Home = () => {
         }
 
         if (lbUser) {
-          const lbRes = await fetch(`/api/movie/letterboxd/${lbUser}`);
-          if (lbRes.ok) {
-            const lbData = await lbRes.json();
-            setMyRecentMovies(lbData);
+          try {
+            const lbRes = await fetch(`/api/movie/letterboxd/${lbUser}`);
+            if (lbRes.ok) {
+              const lbData = await lbRes.json();
+              setMyRecentMovies(lbData);
+            } else if (lbRes.status === 404) {
+              console.warn(`Letterboxd user "${lbUser}" not found or has no recent activity.`);
+              // Optional: Clear or suggest clearing invalid username
+            }
+          } catch (err) {
+            console.error("Letterboxd fetch error:", err);
           }
         }
 
@@ -99,14 +113,33 @@ const Home = () => {
     };
     
     initHome();
+  }, [user, isAuthenticated]);
+
+  useEffect(() => {
+    // Listen for real-time Spotify updates
+    socket.on('spotify_update', (newTrack) => {
+      console.log("Real-time Spotify update received:", newTrack);
+      setRecentSongs(prev => {
+        // Prevent duplicates if by some chance they occur
+        if (prev.length > 0 && prev[0].id === newTrack.id) return prev;
+        
+        // Add new track at the beginning and keep last 20
+        const updated = [newTrack, ...prev];
+        return updated.slice(0, 20);
+      });
+    });
+
+    return () => {
+      socket.off('spotify_update');
+    };
   }, []);
 
   const handleLogin = () => {
-    window.location.href = '/api/auth/spotify';
+    navigate('/login');
   };
 
 
-  if (loading) return <LoadingScreen message={t('home.loading')} />
+  if (loading || authLoading) return <LoadingScreen message={t('home.loading')} />
 
 
   if (!isAuthenticated) {

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Node.js API client (Real-time, Spotify, AI)
 export const nodeApi = axios.create({
-  baseURL: import.meta.env.VITE_NODE_API_URL || '/api', // Proxy in development
+  baseURL: import.meta.env.VITE_NODE_API_URL ? `${import.meta.env.VITE_NODE_API_URL}/api` : '/api',
   withCredentials: true,
 });
 
@@ -18,16 +18,28 @@ export const favoritesApi = {
   remove: (id) => laravelApi.delete(`/favorites/${id}`),
 };
 
+export const listsApi = {
+  getAll: (userId) => laravelApi.get(`/lists?user_id=${userId}`),
+  getOne: (id) => laravelApi.get(`/lists/${id}`),
+  create: (data) => laravelApi.post('/lists', data),
+  update: (id, data) => laravelApi.put(`/lists/${id}`, data),
+  delete: (id) => laravelApi.delete(`/lists/${id}`),
+  addItem: (listId, data) => laravelApi.post(`/lists/${listId}/items`, data),
+  removeItem: (listId, itemId) => laravelApi.delete(`/lists/${listId}/items/${itemId}`),
+};
+
 export const authApi = {
   getCurrentUser: () => nodeApi.get('/auth/me'),
   logout: () => nodeApi.post('/auth/logout'),
   register: (data) => laravelApi.post('/auth/register', data),
   login: (data) => laravelApi.post('/auth/login', data),
   syncGoogle: (data) => laravelApi.post('/auth/sync-google', data),
+  syncLetterboxd: (username, email) => laravelApi.post('/auth/sync-letterboxd', { username, email }),
 };
 
 export const recommendationApi = {
   generate: (data) => nodeApi.post('/recommendation/generate', data),
+  generateFromList: (data) => nodeApi.post('/recommendation/generate-from-list', data),
   getTrending: () => nodeApi.get('/recommendation/trending'),
   getInitialData: () => nodeApi.get('/recommendation/initial-data'),
 };

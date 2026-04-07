@@ -14,12 +14,16 @@ export const renderStars = (rating) => {
   );
 };
 
-export const MovieCard = ({ movie, isDragging, showRating = true }) => (
-  <div className="movie-card" style={{ userSelect: 'none', position: 'relative' }}>
-    <a 
-      href={movie.link || "#"} 
-      target="_blank" 
-      rel="noopener noreferrer" 
+export const MovieCard = ({ movie, isDragging, showRating = true, onClick }) => (
+  <div 
+    className="movie-card" 
+    style={{ userSelect: 'none', position: 'relative', cursor: onClick ? 'pointer' : 'default' }}
+    onClick={() => {
+      if (!isDragging && onClick) onClick(movie, 'movie');
+      else if (!isDragging && !onClick && movie.link) window.open(movie.link, '_blank');
+    }}
+  >
+    <div 
       style={{ 
         pointerEvents: isDragging ? 'none' : 'auto', 
         display: 'block', 
@@ -38,7 +42,7 @@ export const MovieCard = ({ movie, isDragging, showRating = true }) => (
         draggable="false"
         style={{ border: 'none', display: 'block' }}
       />
-    </a>
+    </div>
     <div className="movie-name" title={movie.title || movie.name} style={{ marginTop: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-primary)' }}>{movie.title || movie.name}</div>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
       <div className="movie-year" style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{movie.year}</div>
@@ -47,12 +51,17 @@ export const MovieCard = ({ movie, isDragging, showRating = true }) => (
   </div>
 );
 
-export const SongCard = ({ song, isDragging, showRating = true }) => (
+export const SongCard = ({ song, isDragging, showRating = true, onClick }) => (
   <div 
     className="song-card" 
     style={{ 
       userSelect: 'none',
-      pointerEvents: isDragging ? 'none' : 'auto' 
+      pointerEvents: isDragging ? 'none' : 'auto',
+      cursor: onClick ? 'pointer' : 'default' 
+    }}
+    onClick={() => {
+      if (!isDragging && onClick) onClick(song, 'song');
+      else if (!isDragging && !onClick && song.link) window.open(song.link, '_blank');
     }}
   >
     <div style={{ 

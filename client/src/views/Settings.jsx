@@ -1,13 +1,22 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../components/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -61,7 +70,11 @@ const Settings = () => {
       <div className="settings-group">
         <h3 className="stat-label" style={{ marginBottom: '1rem' }}>{t('settings.account')}</h3>
         <div className="settings-card">
-          <button className="rec-button" style={{ width: '100%', background: '#ef4444', color: 'white', padding: '0.75rem' }}>
+          <button 
+            onClick={handleLogout}
+            className="rec-button" 
+            style={{ width: '100%', background: '#ef4444', color: 'white', padding: '0.75rem' }}
+          >
             {t('settings.logout')}
           </button>
         </div>

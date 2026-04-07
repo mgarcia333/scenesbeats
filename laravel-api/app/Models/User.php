@@ -23,6 +23,7 @@ class User extends Authenticatable
         'spotify_id',
         'google_id',
         'avatar',
+        'letterboxd_username',
     ];
 
     /**

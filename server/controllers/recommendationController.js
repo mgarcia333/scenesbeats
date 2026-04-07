@@ -285,3 +285,86 @@ export const getInitialCommunityData = async (req, res) => {
   }
 };
 
+/**
+ * Controller to generate recommendation based on a specific list of items.
+ */
+export const generateFromList = async (req, res) => {
+  try {
+    const { items = [], listName = "Mi Lista" } = req.body;
+
+    if (items.length === 0) {
+      return res.status(400).json({ error: 'La lista no tiene elementos para analizar.' });
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    //usar gemini 2.5 flash siempre (no cambiar)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const movies = items.filter(i => i.type === 'movie').map(m => `${m.title} ${m.subtitle ? '('+m.subtitle+')' : ''}`);
+    const songs = items.filter(i => i.type === 'song' || i.type === 'album').map(s => `${s.title} por ${s.subtitle}`);
+
+    let context = `LISTA: "${listName}"\n`;
+    if (movies.length > 0) context += `Películas en la lista:\n- ${movies.join('\n- ')}\n\n`;
+    if (songs.length > 0) context += `Canciones en la lista:\n- ${songs.join('\n- ')}\n\n`;
+
+    const systemInstruction = `Eres un experto internacional en cine y música. 
+El usuario ha creado una lista interdisciplinaria llamada "${listName}" que contiene películas y/o canciones.
+Analiza profundamente la VIBRA, la estética, la narrativa, y el tono emocional de ESTA LISTA y recomienda UNA PELÍCULA EXACTA (que no esté ya en la lista) y UNA CANCIÓN EXACTA (que no esté en la lista) que encajen de forma magistral con la colección.
+REGLA CRÍTICA: Debes devolver un JSON válido estrictamente en este formato:
+{
+  "vibra": "Análisis poético de la estética y sentimientos de esta lista.",
+  "pelicula": "Título exacto de película",
+  "cancion": "Título exacto de canción - Artista",
+  "motivo": "Explicación de por qué son las adiciones perfectas para esta lista específica."
+}`;
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\n${context}` }] }],
+      generationConfig: { temperature: 0.8, responseMimeType: "application/json" }
+    });
+
+    const response = await result.response;
+    let text = response.text().replace(/```json|```/gi, '').trim();
+    
+    let jsonResponse;
+    try {
+      jsonResponse = JSON.parse(text);
+    } catch(e) {
+      jsonResponse = {
+        vibra: "Error analizando la vibra",
+        pelicula: "Interstellar",
+        cancion: "Space Oddity - David Bowie",
+        motivo: "Fallback"
+      };
+    }
+
+    // Attempt to lookup the movie from TMDB for a poster if possible
+    let movieTitle = jsonResponse.pelicula;
+    const cleanTitle = movieTitle.replace(/\(\d{4}\)/g, '').trim();
+    let posterUrl = null;
+
+    try {
+      if (movieTitle && process.env.TMDB_API_KEY) {
+        const tmdbRes = await axios.get(`https://api.themoviedb.org/3/search/movie`, {
+          params: { api_key: process.env.TMDB_API_KEY, query: cleanTitle, language: 'es-ES', page: 1 }
+        });
+        if (tmdbRes.data.results && tmdbRes.data.results.length > 0) {
+          const movieData = tmdbRes.data.results[0];
+          if (movieData.poster_path) {
+            posterUrl = `https://image.tmdb.org/t/p/w780${movieData.poster_path}`;
+          }
+        }
+      }
+    } catch (tmdbError) {
+      console.error("TMDB Error inside generateFromList (non-fatal):", tmdbError.message);
+    }
+
+    if (posterUrl) jsonResponse.poster_url = posterUrl;
+
+    res.json(jsonResponse);
+
+  } catch (error) {
+    console.error('List Recommendation API Error:', error);
+    res.status(500).json({ error: 'Failed to generate list recommendation' });
+  }
+};

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Music, Film, Sparkles, AlertCircle } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';
 import { recommendationApi, favoritesApi } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const Recommendations = () => {
+  const { user } = useAuth();
   const [loadingRec, setLoadingRec] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -21,11 +23,8 @@ const Recommendations = () => {
     let fav_songs = [];
 
     try {
-      const authRes = await fetch('/api/auth/me'); // Simple fetch for now to check session
-      const authData = await authRes.json();
-      
-      if (authData.authenticated && authData.user.id) {
-        const favRes = await favoritesApi.getAll(authData.user.id);
+      if (user && user.id) {
+        const favRes = await favoritesApi.getAll(user.id);
         const allFavs = favRes.data;
         fav_movies = allFavs.filter(f => f.type === 'movie');
         fav_songs = allFavs.filter(f => f.type === 'song');
