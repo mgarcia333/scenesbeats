@@ -1,116 +1,151 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { socialApi } from '../api';
 import { useAuth } from '../context/AuthContext';
-import ActivityCard from '../components/ActivityCard';
-import { Users, UserPlus, Zap } from 'lucide-react';
+import { 
+  Users, UserPlus, Check, X, Clock, MessageSquare, 
+  Heart, Sparkles, Film, Music, List as ListIcon 
+} from 'lucide-react';
+
+const ActivityCard = ({ activity }) => {
+  const { t } = useTranslation();
+  const { user, type, data, created_at } = activity;
+  const date = new Date(created_at).toLocaleDateString();
+
+  let content = null;
+  switch (type) {
+    case 'list_created':
+      content = (
+        <>
+          <span>{t('community.createdList')} </span>
+          <strong className="activity-subject">{data.list_name}</strong>
+        </>
+      );
+      break;
+    case 'friend_added':
+      content = (
+        <>
+          <span>{t('community.addedFriend')} </span>
+          <strong className="activity-subject">{data.friend_name}</strong>
+        </>
+      );
+      break;
+    case 'rec_generated':
+      content = (
+        <>
+          <span>{t('community.genRec')} </span>
+          <strong className="activity-subject">{data.list_name}</strong>
+        </>
+      );
+      break;
+    default:
+      content = <span>{t('common.activityDefault') || 'ha realizado una actividad.'}</span>;
+  }
+
+  const Icon = type === 'list_created' ? ListIcon : (type === 'friend_added' ? Users : Sparkles);
+
+  return (
+    <div className="activity-card animate-fadeIn">
+      <div className="activity-header">
+        <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`} alt="" className="user-avatar-sm" />
+        <div className="activity-info">
+          <div className="activity-user">{user.name}</div>
+          <div className="activity-time"><Clock size={12} /> {date}</div>
+        </div>
+      </div>
+      <div className="activity-body">
+        <div className="activity-icon-box"><Icon size={16} /></div>
+        <div className="activity-text">{content}</div>
+      </div>
+    </div>
+  );
+};
 
 const Community = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  
-  // Hardcoded real community activity for demo
-  const [friendActivity] = useState([
-    {
-      id: 1,
-      user: "Alex",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-      action: t('home.listened') || "escuchó",
-      item: "Midnights - Taylor Swift",
-      meta: t('home.timeAgo', { count: 2, unit: 'h' }) || "hace 2h",
-      comment: "Increíble producción, 'Anti-Hero' es un hit instantáneo."
-    },
-    {
-      id: 2,
-      user: "Maria",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
-      action: t('home.reacted') || "reaccionó a",
-      item: "Curtain Call - Eminem",
-      meta: t('home.timeAgo', { count: 5, unit: 'h' }) || "hace 5h",
-      comment: "Nostalgia pura."
-    },
-    {
-      id: 3,
-      user: "Dani",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Dani",
-      action: t('home.watched') || "vio",
-      item: "Inception (2010)",
-      meta: t('home.timeAgo', { count: 1, unit: 'd' }) || "hace 1d",
-      comment: "Todavía intentando entender el final."
-    },
-    {
-      id: 4,
-      user: "Carla",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Carla",
-      action: t('home.listened') || "escuchó",
-      item: "Blonde - Frank Ocean",
-      meta: "hace 3h",
-      comment: "Perfecto para este clima."
+  const [activities, setActivities] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [actRes, pendRes] = await Promise.all([
+        socialApi.getActivities(),
+        user ? socialApi.getPendingRequests(user.id) : Promise.resolve({ data: [] })
+      ]);
+      setActivities(actRes.data);
+      setPendingRequests(pendRes.data);
+    } catch (err) {
+      console.error("Error fetching community data:", err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  const handleRequestAction = async (requestId, status) => {
+    try {
+      await socialApi.updateRequest(requestId, status);
+      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+      if (status === 'accepted') fetchData();
+    } catch (err) {
+      console.error("Error updating request:", err);
+    }
+  };
 
   return (
-    <div className="view-container">
-      <div className="community-header">
-        <h2 className="section-title">{t('nav.community') || "Comunidad"}</h2>
-        <p className="rec-subtitle">Descubre qué están escuchando y viendo tus amigos en tiempo real.</p>
-      </div>
-
-      <div className="community-layout animate-fadeIn">
-        {/* Left side: Activity Feed */}
-        <div className="activity-feed">
-          <div className="feed-header">
-            <Zap size={18} className="text-primary" />
-            <span>Actividad Reciente</span>
-          </div>
+    <div className="view-container animate-fadeIn">
+      <div className="community-layout">
+        <div className="community-main">
+          <h1 className="view-title">{t('community.title')}</h1>
           
-          <div className="feed-items">
-            {friendActivity.map(item => (
-              <div key={item.id} className="feed-item-wrapper animate-fadeInUp">
-                <ActivityCard activity={item} />
-              </div>
-            ))}
+          <div className="activity-feed">
+            {activities.length > 0 ? (
+              activities.map(act => <ActivityCard key={act.id} activity={act} />)
+            ) : (
+              <div className="empty-state">{t('community.noActivity')}</div>
+            )}
           </div>
         </div>
 
-        {/* Right side: Social Tools (Future) */}
-        <div className="social-sidebar">
-          <div className="social-card glass">
-            <h4>Sugerencias para ti</h4>
-            <div className="suggested-users">
-               <div className="suggested-user">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Marc" alt="" />
-                  <div className="user-meta">
-                    <span className="name">Marc G.</span>
-                    <span className="mutual">3 amigos en común</span>
+        <div className="community-sidebar">
+          {pendingRequests.length > 0 && (
+            <div className="sidebar-section">
+              <h2 className="section-title">{t('community.requests')}</h2>
+              <div className="requests-list">
+                {pendingRequests.map(req => (
+                  <div key={req.id} className="request-card">
+                    <img 
+                      src={req.sender.avatar || `https://ui-avatars.com/api/?name=${req.sender.name}`} 
+                      className="user-avatar-sm" 
+                      alt="" 
+                    />
+                    <div className="request-info">
+                      <div className="request-name">{req.sender.name}</div>
+                      <div className="request-actions">
+                        <button className="btn-icon accept" onClick={() => handleRequestAction(req.id, 'accepted')}>
+                          <Check size={14} />
+                        </button>
+                        <button className="btn-icon reject" onClick={() => handleRequestAction(req.id, 'rejected')}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button className="add-btn"><UserPlus size={16} /></button>
-               </div>
-               <div className="suggested-user">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Elena" alt="" />
-                  <div className="user-meta">
-                    <span className="name">Elena R.</span>
-                    <span className="mutual">Le gusta tu misma música</span>
-                  </div>
-                  <button className="add-btn"><UserPlus size={16} /></button>
-               </div>
+                ))}
+              </div>
             </div>
-            <button className="view-all-btn">Ver todos</button>
-          </div>
+          )}
 
-          <div className="social-card glass stats-card">
-            <div className="stat-row">
-               <Users size={20} />
-               <div className="stat-info">
-                  <span className="val">12</span>
-                  <span className="lab">Seguidores</span>
-               </div>
-            </div>
-            <div className="stat-row">
-               <UserPlus size={20} />
-               <div className="stat-info">
-                  <span className="val">45</span>
-                  <span className="lab">Siguiendo</span>
-               </div>
+          <div className="sidebar-section">
+            <h2 className="section-title">{t('community.suggestions')}</h2>
+            <div className="suggestions-box">
+              <p className="text-muted small">{t('community.suggestionsDesc')}</p>
             </div>
           </div>
         </div>

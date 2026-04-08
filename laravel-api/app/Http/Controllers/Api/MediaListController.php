@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\MediaList;
 use App\Models\MediaListItem;
+use App\Models\Activity;
 use Illuminate\Http\Request;
 
 class MediaListController extends Controller
@@ -36,6 +37,16 @@ class MediaListController extends Controller
             'description' => $request->description,
             'cover_image_url' => $request->cover_image_url,
             'is_public' => $request->is_public ?? true
+        ]);
+
+        // Create activity
+        Activity::create([
+            'user_id' => $request->user_id,
+            'type' => 'list_created',
+            'data' => [
+                'list_id' => $list->id,
+                'list_name' => $list->name
+            ]
         ]);
 
         return response()->json($list, 201);

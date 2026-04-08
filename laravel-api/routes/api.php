@@ -26,6 +26,31 @@ Route::delete('/lists/{id}', [MediaListController::class, 'destroy']);
 Route::post('/lists/{id}/items', [MediaListController::class, 'addItem']);
 Route::delete('/lists/{id}/items/{itemId}', [MediaListController::class, 'removeItem']);
 
+// Social & Friends
+use App\Http\Controllers\Api\FriendshipController;
+Route::get('/friendships', [FriendshipController::class, 'index']);
+Route::get('/friendships/pending', [FriendshipController::class, 'pending']);
+Route::post('/friendships', [FriendshipController::class, 'store']);
+Route::put('/friendships/{id}', [FriendshipController::class, 'update']);
+Route::delete('/friendships/{id}', [FriendshipController::class, 'destroy']);
+
+// Community Activity
+use App\Http\Controllers\Api\ActivityController;
+Route::get('/activities', [ActivityController::class, 'index']);
+
+// User Search
+Route::get('/users/search', function (Request $request) {
+    $query = $request->query('query');
+    return App\Models\User::where('name', 'LIKE', "%{$query}%")
+        ->orWhere('email', 'LIKE', "%{$query}%")
+        ->limit(10)
+        ->get();
+});
+
+Route::get('/users/{id}', function ($id) {
+    return App\Models\User::with(['lists'])->findOrFail($id);
+});
+
 // Auth / User Sync
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);

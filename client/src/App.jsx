@@ -13,6 +13,7 @@ import Register from './views/Register';
 import ListView from './views/ListView';
 import Lists from './views/Lists';
 import ItemDetail from './views/ItemDetail';
+import UserProfile from './views/UserProfile';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { io } from 'socket.io-client';
@@ -103,6 +104,11 @@ const MainLayout = () => {
                             <ItemDetail type="song" />
                         </PrivateRoute>
                     } />
+                    <Route path="/user/:id" element={
+                        <PrivateRoute>
+                            <UserProfile />
+                        </PrivateRoute>
+                    } />
                 </Routes>
             </main>
             {isAuthenticated && <Navbar />}
@@ -116,11 +122,16 @@ const SocketHandler = () => {
     useEffect(() => {
         if (user) {
             socket.emit('register_user', user.id);
+            
+            socket.on('friend_request', (data) => {
+                alert(`Nueva solicitud de amistad de ${data.from}`);
+            });
         }
         
         return () => {
             socket.off('connect');
             socket.off('notification');
+            socket.off('friend_request');
         };
     }, [user]);
     

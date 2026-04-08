@@ -53,4 +53,35 @@ class User extends Authenticatable
     {
         return $this->hasMany(Favorite::class);
     }
+
+    public function sentFriendRequests()
+    {
+        return $this->hasMany(Friendship::class, 'sender_id');
+    }
+
+    public function receivedFriendRequests()
+    {
+        return $this->hasMany(Friendship::class, 'recipient_id');
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    public function lists()
+    {
+        return $this->hasMany(MediaList::class);
+    }
+
+    /**
+     * Get accepted friends
+     */
+    public function friends()
+    {
+        $sent = $this->sentFriendRequests()->where('status', 'accepted')->pluck('recipient_id');
+        $received = $this->receivedFriendRequests()->where('status', 'accepted')->pluck('sender_id');
+        
+        return User::whereIn('id', $sent->merge($received))->get();
+    }
 }

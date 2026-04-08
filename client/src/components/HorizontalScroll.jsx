@@ -10,14 +10,13 @@ const HorizontalScroll = ({ children }) => {
     setIsDragging(true);
     setStartX(e.pageX - scrollRef.current.offsetLeft);
     setScrollLeft(scrollRef.current.scrollLeft);
+    // Add custom class to body to prevent text selection during drag
+    document.body.classList.add('grabbing');
   };
 
-  const handleMouseLeave = () => {
+  const stopDragging = () => {
     setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
+    document.body.classList.remove('grabbing');
   };
 
   const handleMouseMove = (e) => {
@@ -28,22 +27,33 @@ const HorizontalScroll = ({ children }) => {
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
+  // Touch handlers for mobile
+  const handleTouchStart = (e) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    const x = e.touches[0].pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; 
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   return (
     <div 
       className={`horizontal-scroll ${isDragging ? 'dragging' : ''}`}
       ref={scrollRef}
       onMouseDown={handleMouseDown}
-      onMouseLeave={handleMouseLeave}
-      onMouseUp={handleMouseUp}
+      onMouseLeave={stopDragging}
+      onMouseUp={stopDragging}
       onMouseMove={handleMouseMove}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={stopDragging}
     >
-      {React.Children.map(children, child => {
-        // We pass the isDragging prop to children if we need to disable clicks
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, { isDragging });
-        }
-        return child;
-      })}
+      {children}
     </div>
   );
 };

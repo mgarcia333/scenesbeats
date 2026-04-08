@@ -201,3 +201,130 @@ export const getTrackDetails = async (req, res) => {
   }
 };
 
+/**
+ * Search artists using Spotify API
+ */
+export const searchArtists = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    const response = await axios.get(`https://api.spotify.com/v1/search`, {
+      params: {
+        q: query,
+        type: 'artist',
+        limit: 10
+      },
+      headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+    });
+
+    const artists = response.data.artists.items.map(artist => ({
+      id: artist.id,
+      name: artist.name,
+      genres: artist.genres?.slice(0, 3).join(', '),
+      image: artist.images?.[0]?.url || null,
+      followers: artist.followers?.total,
+      external_url: artist.external_urls.spotify
+    }));
+
+    res.json(artists);
+  } catch (error) {
+    console.error('Spotify Artist Search Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Artist search failed' });
+  }
+};
+
+/**
+ * Controller to fetch user's currently playing track.
+ */
+export const getCurrentlyPlaying = async (req, res) => {
+  try {
+    const response = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
+      headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+    });
+    
+    // Spotify returns 204 if nothing is playing
+    if (response.status === 204 || !response.data) {
+      return res.json({ is_playing: false });
+    }
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching currently playing:', error.response?.data || error.message);
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Failed' });
+  }
+};
+
+/**
+ * Search tracks using Spotify API
+ */
+export const searchTracks = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    const response = await axios.get(`https://api.spotify.com/v1/search`, {
+      params: {
+        q: query,
+        type: 'track',
+        limit: 10
+      },
+      headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+    });
+
+    const tracks = (response.data.tracks?.items || []).map(track => ({
+      id: track.id,
+      name: track.name,
+      artist: track.artists?.[0]?.name,
+      image: track.album?.images?.[0]?.url || null,
+      external_url: track.external_urls.spotify
+    }));
+
+    res.json(tracks);
+  } catch (error) {
+    console.error('Spotify Track Search Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Track search failed' });
+  }
+};
+
+/**
+ * Search albums using Spotify API
+ */
+export const searchAlbums = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    const response = await axios.get(`https://api.spotify.com/v1/search`, {
+      params: {
+        q: query,
+        type: 'album',
+        limit: 10
+      },
+      headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+    });
+
+    const albums = (response.data.albums?.items || []).map(album => ({
+      id: album.id,
+      name: album.name,
+      artist: album.artists?.[0]?.name,
+      image: album.images?.[0]?.url || null,
+      external_url: album.external_urls.spotify
+    }));
+
+    res.json(albums);
+  } catch (error) {
+    console.error('Spotify Album Search Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Album search failed' });
+  }
+};
+

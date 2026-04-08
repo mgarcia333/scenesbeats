@@ -122,3 +122,37 @@ export const getMovieDetails = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch movie details' });
   }
 };
+/**
+ * Search people (directors, actors) using TMDB API
+ */
+export const searchPeople = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    const response = await axios.get(`https://api.themoviedb.org/3/search/person`, {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        query: query,
+        language: 'es-ES',
+        page: 1
+      }
+    });
+
+    const people = response.data.results.map(person => ({
+      id: person.id,
+      name: person.name,
+      role: person.known_for_department,
+      image: person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : null,
+      known_for: person.known_for?.map(m => m.title || m.name).join(', ')
+    }));
+
+    res.json(people);
+  } catch (error) {
+    console.error('TMDB Person Search Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Person search failed' });
+  }
+};

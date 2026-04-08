@@ -23,6 +23,7 @@ class FavoritesController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'type' => 'required|string',
+            'position' => 'required|integer|min:1|max:4',
             'external_id' => 'required|string',
             'title' => 'required|string',
             'subtitle' => 'nullable|string',
@@ -33,7 +34,7 @@ class FavoritesController extends Controller
             [
                 'user_id' => $validated['user_id'],
                 'type' => $validated['type'],
-                'external_id' => $validated['external_id']
+                'position' => $validated['position']
             ],
             $validated
         );

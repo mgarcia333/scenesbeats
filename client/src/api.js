@@ -10,14 +10,10 @@ export const nodeApi = axios.create({
 nodeApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Only clear if it's a call that SHOULD have been authenticated
-      // or if it's the 'me' call itself
-      const isAuthMe = error.config.url.includes('/auth/me');
-      if (isAuthMe) {
-        console.warn("Session expired (401), clearing local storage.");
-        localStorage.removeItem('user');
-      }
+    // We don't clear localStorage here anymore — let AuthContext decide
+    // based on specific initialization logic or manual logout.
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized API call (401):", error.config.url);
     }
     return Promise.reject(error);
   }
@@ -55,6 +51,18 @@ export const authApi = {
   getSpotifyStatus: () => nodeApi.get('/auth/spotify/status'),
 };
 
+export const socialApi = {
+  getFriends: (userId) => laravelApi.get(`/friendships?user_id=${userId}`),
+  getPendingRequests: (userId) => laravelApi.get(`/friendships/pending?user_id=${userId}`),
+  sendRequest: (data) => laravelApi.post('/friendships', data),
+  updateRequest: (id, status) => laravelApi.put(`/friendships/${id}`, { status }),
+  removeFriend: (id) => laravelApi.delete(`/friendships/${id}`),
+  getActivities: () => laravelApi.get('/activities'),
+  searchUsers: (query) => laravelApi.get(`/users/search?query=${query}`),
+  getUserProfile: (id) => laravelApi.get(`/users/${id}`),
+  createActivity: (data) => laravelApi.post('/activities', data),
+};
+
 export const recommendationApi = {
   generate: (data) => nodeApi.post('/recommendation/generate', data),
   generateFromList: (data) => nodeApi.post('/recommendation/generate-from-list', data),
@@ -66,10 +74,16 @@ export const movieApi = {
   search: (query) => nodeApi.get(`/movie/search?query=${query}`),
   getLetterboxd: (username) => nodeApi.get(`/movie/letterboxd/${username}`),
   getOne: (id) => nodeApi.get(`/movie/${id}`),
+  searchPeople: (query) => nodeApi.get(`/movie/search-people?query=${query}`),
 };
 
 export const spotifyApi = {
   createPlaylist: (data) => nodeApi.post('/spotify/playlist', data),
   getTrack: (id) => nodeApi.get(`/spotify/track/${id}`),
+  searchArtists: (query) => nodeApi.get(`/spotify/search-artists?query=${query}`),
+  searchTracks: (query) => nodeApi.get(`/spotify/search-tracks?query=${query}`),
+  searchAlbums: (query) => nodeApi.get(`/spotify/search-albums?query=${query}`),
+  getRecentlyPlayed: (limit = 20) => nodeApi.get(`/spotify/recently-played?limit=${limit}`),
+  getCurrentlyPlaying: () => nodeApi.get('/spotify/currently-playing'),
 };
 

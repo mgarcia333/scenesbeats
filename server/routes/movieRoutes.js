@@ -1,5 +1,5 @@
 import express from 'express';
-import { getLetterboxdRecent, searchMovies, getMovieDetails } from '../controllers/movieController.js';
+import { getLetterboxdRecent, searchMovies, getMovieDetails, searchPeople } from '../controllers/movieController.js';
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/search', searchMovies);
+router.get('/search-people', searchPeople);
 
 /**
  * @route   GET /api/movie/letterboxd/:username

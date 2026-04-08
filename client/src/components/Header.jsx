@@ -17,7 +17,9 @@ const Header = () => {
           </Link>
         )}
       </div>
-      <h1 className="header-title">ScenesBeats</h1>
+      <h1 className="header-title">
+        <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>ScenesBeats</Link>
+      </h1>
       <div className="header-right">
         <div className="header-profile">
           <Link to={user ? '/profile' : '/login'}>

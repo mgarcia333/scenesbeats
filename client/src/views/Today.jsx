@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { recommendationApi } from '../api';
 
 const Today = () => {
   const [loadingRec, setLoadingRec] = useState(false);
@@ -10,25 +11,15 @@ const Today = () => {
     setErrorMsg("");
     setRecommendation(null);
     try {
-      const res = await fetch('/api/recommendation/generate', { method: 'POST', credentials: 'include' });
-      
-      if (res.status === 401) {
-        setErrorMsg("Tu sesión de Spotify ha expirado o no se ha encontrado. Por favor, ve a la Home e inicia sesión de nuevo.");
-        setLoadingRec(false);
-        return;
-      }
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setErrorMsg(data.error || "Error al obtener recomendación.");
-      } else {
-        setRecommendation(data);
-      }
+      const res = await recommendationApi.generate();
+      setRecommendation(res.data);
     } catch (err) {
-
+      if (err.response && err.response.status === 401) {
+        setErrorMsg("Tu sesión de Spotify ha expirado o no se ha encontrado. Por favor, ve a la Home e inicia sesión de nuevo.");
+      } else {
+        setErrorMsg(err.response?.data?.error || "Error de red al conectar con el servidor.");
+      }
       console.error(err);
-      setErrorMsg("Error de red al conectar con el servidor.");
     } finally {
       setLoadingRec(false);
     }

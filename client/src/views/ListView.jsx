@@ -170,6 +170,18 @@ const ListView = () => {
     try {
       const res = await recommendationApi.generateFromList({ items: list.items, listName: list.name });
       setRecommendation(res.data);
+      
+      // Record activity
+      if (user) {
+        socialApi.createActivity({
+          user_id: user.id,
+          type: 'rec_generated',
+          data: {
+            list_id: id,
+            list_name: list.name
+          }
+        }).catch(err => console.error("Activity log error:", err));
+      }
     } catch (err) { console.error(err); }
     finally { setGenerating(false); }
   };
@@ -227,7 +239,12 @@ const ListView = () => {
         setSearchResults(tracks);
       }
     } catch (err) {
-      console.error('Quick search error:', err);
+      if (err.response?.status === 401) {
+        setSearchResults([]);
+        console.warn("Spotify search Unauthorized (401) - session might be expired");
+      } else {
+        console.error('Quick search error:', err);
+      }
     } finally {
       setSearching(false);
     }
@@ -246,7 +263,12 @@ const ListView = () => {
       setSearchQuery('');
       setSearchResults([]);
     } catch (err) {
-      console.error('Add item error:', err);
+      if (err.response?.status === 409) {
+        alert("Este elemento ya está en la lista.");
+      } else {
+        console.error('Add item error:', err);
+        alert("Error al añadir el elemento.");
+      }
     }
   };
 

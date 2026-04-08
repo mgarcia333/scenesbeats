@@ -7,6 +7,7 @@ import ActivityCard from '../components/ActivityCard';
 import HorizontalScroll from '../components/HorizontalScroll';
 import { MovieCard, SongCard } from '../components/Cards';
 import { useAuth } from '../context/AuthContext';
+import { recommendationApi, spotifyApi, movieApi } from '../api';
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -59,24 +60,25 @@ const Home = () => {
 
         // Trending movies (public)
         fetches.push(
-          fetch('/api/recommendation/trending')
-            .then(r => r.ok ? r.json() : [])
-            .then(data => setRecentMovies(data))
+          recommendationApi.getTrending()
+            .then(res => setRecentMovies(res.data))
             .catch(() => {})
         );
 
         // Spotify recently played (only if spotify is connected)
         if (spotifyConnected) {
           fetches.push(
-            fetch('/api/spotify/recently-played', { credentials: 'include' })
-              .then(r => r.ok ? r.json() : null)
-              .then(data => {
+            spotifyApi.getRecentlyPlayed(20)
+              .then(res => {
+                const data = res.data;
                 if (data?.items) {
                   const songs = data.items.map(item => ({
                     id: item.track.id,
                     name: item.track.name,
                     artist: item.track.artists[0].name,
-                    artwork: item.track.album.images[0]?.url
+                    artwork: item.track.album.images[0]?.url,
+                    previewUrl: item.track.preview_url,
+                    spotifyUrl: item.track.external_urls.spotify,
                   }));
                   setRecentSongs(songs);
                 }
@@ -88,9 +90,8 @@ const Home = () => {
         // Letterboxd movies (only if username is configured)
         if (user?.letterboxd_username) {
           fetches.push(
-            fetch(`/api/movie/letterboxd/${user.letterboxd_username}`)
-              .then(r => r.ok ? r.json() : [])
-              .then(data => setMyRecentMovies(data))
+            movieApi.getLetterboxd(user.letterboxd_username)
+              .then(res => setMyRecentMovies(res.data))
               .catch(() => {})
           );
         }

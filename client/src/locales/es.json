@@ -188,6 +188,29 @@
     "lists": "Listas",
     "settings": "Ajustes"
   },
+  "community": {
+    "title": "Comunidad",
+    "noActivity": "No hay actividad reciente en tu círculo.",
+    "requests": "Solicitudes",
+    "suggestions": "Sugerencias",
+    "suggestionsDesc": "Busca a otros cinéfilos y melómanos para conectar.",
+    "listened": "escuchó",
+    "watched": "vio",
+    "createdList": "ha creado una nueva lista:",
+    "addedFriend": "ahora es amigo de",
+    "genRec": "ha generado una recomendación para la lista",
+    "accept": "Aceptar",
+    "reject": "Rechazar"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ha ocurrido un error",
+    "back": "Volver",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "addToList": "Añadir a lista",
+    "summary": "Resumen"
+  },
   "lists": {
     "title": "Mis Listas",
     "empty": "Aún no tienes listas. ¡Crea tu primera colección!",
