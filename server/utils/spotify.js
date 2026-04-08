@@ -3,7 +3,9 @@ export const getSpotifyAuthUrl = (state = 'login') => {
     'user-read-private',
     'user-read-email',
     'user-top-read',
-    'user-read-recently-played'
+    'user-read-recently-played',
+    'playlist-modify-public',
+    'playlist-modify-private'
   ].join(' ');
 
   const params = new URLSearchParams({

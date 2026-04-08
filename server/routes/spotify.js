@@ -1,5 +1,8 @@
 import express from 'express';
-import { getTopItems, getRecentlyPlayed, getAudioFeatures, getRecommendations, searchSpotify, createPlaylist } from '../controllers/spotifyController.js';
+import { 
+  getTopItems, getRecentlyPlayed, getAudioFeatures, getRecommendations, 
+  searchSpotify, createPlaylist, getTrackDetails 
+} from '../controllers/spotifyController.js';
 import { requireSpotifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -12,6 +15,7 @@ router.get('/recently-played', getRecentlyPlayed);
 router.get('/audio-features', getAudioFeatures);
 router.get('/search', searchSpotify);
 router.get('/recommendations', getRecommendations);
+router.get('/track/:id', getTrackDetails);
 
 /**
  * @route   POST /api/spotify/playlist

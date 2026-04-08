@@ -110,7 +110,7 @@ const Recommendations = () => {
       {!recommendation && !loadingRec && (
         <div className="rec-action-hero">
           <div className="rec-hero-icon">
-            <Sparkles size={48} className="glow-icon" />
+            <Sparkles size={48} />
           </div>
           <button onClick={getRecommendation} className="rec-main-button">
             {t('rec.getBtn')}
@@ -130,7 +130,7 @@ const Recommendations = () => {
 
       {/* Error State */}
       {errorMsg && (
-        <div className="error-banner glass animate-shake">
+        <div className="error-banner animate-shake">
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1 }}>
             <AlertCircle size={20} style={{ flexShrink: 0, marginTop: 2 }} />
             <span>{errorMsg}</span>
@@ -138,7 +138,7 @@ const Recommendations = () => {
           <button
             onClick={getRecommendation}
             disabled={loadingRec}
-            style={{ marginLeft: 'auto', flexShrink: 0, background: 'rgba(29,185,84,0.15)', border: '1px solid rgba(29,185,84,0.3)', color: 'var(--primary-color)', borderRadius: '500px', padding: '0.4rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+            className="error-retry-btn"
           >
             {loadingRec ? <Loader2 size={14} className="spin" /> : 'Reintentar'}
           </button>
@@ -148,13 +148,7 @@ const Recommendations = () => {
       {/* Result Section */}
       {recommendation && (
         <div className="rec-result-view animate-fadeIn">
-          <div className="rec-result-card glass overflow-hidden">
-            {/* Background blur decoration */}
-            <div className="rec-background-poster">
-              {recommendation.poster_url && <img src={recommendation.poster_url} alt="" />}
-              {recommendation.song_metadata?.artwork && <img src={recommendation.song_metadata.artwork} alt="" />}
-            </div>
-
+          <div className="rec-result-card overflow-hidden">
             <div className="rec-card-content">
               {/* Analysis Header */}
               <div className="vibe-badge">

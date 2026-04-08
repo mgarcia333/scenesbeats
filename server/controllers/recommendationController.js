@@ -5,61 +5,77 @@ import { parseStringPromise } from 'xml2js';
 // Model fallback chain — tries in order until one succeeds
 const MODEL_CHAIN = [
   'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro',
+  'gemini-pro',
 ];
 
-/**
- * Calls Gemini with automatic retry and model fallback.
- * Retries on 503 (overloaded) up to 3 times per model.
- */
 const geminiGenerate = async (prompt, generationConfig = {}) => {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  let lastError;
-
-  for (const modelName of MODEL_CHAIN) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { 
-            temperature: 0.75, 
-            responseMimeType: 'application/json', 
-            maxOutputTokens: 1000,
-            ...generationConfig 
-          }
-        });
-        const text = result.response.text().replace(/```json|```/gi, '').trim();
-        console.log(`✅ Gemini responded with model: ${modelName} (attempt ${attempt})`);
-        return text;
-      } catch (err) {
-        lastError = err;
-        const errMsg = err.message?.toLowerCase() || '';
-        const isOverloaded = err.status === 503 || errMsg.includes('503') || errMsg.includes('overloaded') || errMsg.includes('high demand') || errMsg.includes('too many requests') || err.status === 429;
-        const isNotFound = err.status === 404 || errMsg.includes('404') || errMsg.includes('not found');
-        
-        if (isNotFound) {
-          console.warn(`⚠️ Model ${modelName} not found, trying next...`);
-          break; // Try next model immediately
-        }
-        
-        if (isOverloaded && attempt < 3) {
-          const wait = attempt * 2000; // Increased wait
-          console.warn(`⏳ Model ${modelName} overloaded (attempt ${attempt}). Retrying in ${wait}ms...`);
-          await new Promise(r => setTimeout(r, wait));
-        } else if (isOverloaded) {
-          console.warn(`⚠️ Model ${modelName} failed after 3 attempts, trying next model...`);
-          break;
-        } else {
-          console.error(`❌ Unexpected Gemini error (${modelName}):`, err.message);
-          throw err; 
-        }
-      }
-    }
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is missing in environmental variables.');
   }
 
-  throw lastError || new Error('All Gemini models failed');
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const modelName = 'gemini-2.5-flash';
+
+  try {
+    const model = genAI.getGenerativeModel({ model: modelName });
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { 
+        temperature: 0.75, 
+        responseMimeType: 'application/json', 
+        maxOutputTokens: 1000,
+        ...generationConfig 
+      }
+    });
+
+    const text = result.response.text().replace(/```json|```/gi, '').trim();
+    console.log(`✅ Gemini responded with model: ${modelName}`);
+    return text;
+  } catch (err) {
+    console.error(`❌ Gemini Error (${modelName}):`, err.message);
+    
+    // Check if it's a quota issue
+    const errMsg = err.message?.toLowerCase() || '';
+    if (err.status === 429 || errMsg.includes('quota') || errMsg.includes('too many requests')) {
+      throw new Error('QUOTA_EXCEEDED');
+    }
+    
+    throw err;
+  }
+};
+
+/**
+ * Calls Groq (Llama 3.3) as a robust fallback.
+ * Groq is OpenAI-compatible, so we use axios directly.
+ */
+const groqGenerate = async (prompt) => {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY is missing.');
+  }
+
+  console.log("🚀 Attempting Groq (Llama 3.3) fallback...");
+  
+  try {
+    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      response_format: { type: "json_object" }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const text = response.data.choices[0].message.content;
+    console.log("✅ Groq responded successfully.");
+    return text;
+  } catch (err) {
+    console.error("❌ Groq Error:", err.response?.data || err.message);
+    throw err;
+  }
 };
 
 /**
@@ -122,47 +138,53 @@ export const generateRecommendation = async (req, res) => {
     }
 
     // 2. Construct Dynamic Prompt
-    const baseSystem = `Eres un conservador cultural de élite, experto en la sinergia entre el cine y la música. Analiza el contexto proporcionado y devuelve un JSON estricto.`;
+    const baseSystem = `Eres un curator cultural de élite y experto en sinestesia audiovisual. Tu especialidad es encontrar el "hilo invisible" que conecta una canción con una película.
+    No te limites a géneros obvios; busca conexiones en la textura sonora, el ritmo narrativo, el tono emocional y la paleta de colores sugerida.
+    REGLA DE ORO: Respuesta en JSON estricto, sin texto adicional.`;
     
     let prompt = "";
     let outputFormat = "";
 
     if (mode === 'movie_from_music') {
-      outputFormat = `{"vibra": "...", "pelicula": "Título exacto", "motivo": "..."}`;
+      outputFormat = `{"vibra": "Breve descripción poética de la conexión", "pelicula": "Título exacto", "motivo": "Explicación magistral de por qué encajan"}`;
       prompt = `${baseSystem}
-        CONTEXTO MUSICAL RECIENTE:
-        ${trackContext || "No disponible."}
+        HISTORIAL MUSICAL RECIENTE DEL USUARIO:
+        ${trackContext || "No hay datos recientes, básate en sus favoritos."}
         ${favoritesContext}
-        TAREA: Basándote en el ritmo, la lírica y la estética de esta música, recomienda la PELÍCULA perfecta.
-        REGLA: El JSON debe ser: ${outputFormat}`;
+        
+        TAREA: Analiza la "vibra" de la música que el usuario escucha (ritmo, tempo, sentimientos). Recomienda UNA película que capture esa misma energía.
+        FORMATO: ${outputFormat}`;
     } 
     else if (mode === 'movie_from_movies') {
-      outputFormat = `{"vibra": "...", "pelicula": "Título exacto", "motivo": "..."}`;
+      outputFormat = `{"vibra": "...", "pelicula": "...", "motivo": "..."}`;
       prompt = `${baseSystem}
-        CONTEXTO CINEMATOGRÁFICO RECIENTE:
+        HISTORIAL CINEMATOGRÁFICO (Letterboxd):
         ${movieContext || "No disponible."}
         ${favoritesContext}
-        TAREA: Analiza patrones de directores, géneros y narrativa. Recomienda una PELÍCULA que no haya visto.
-        REGLA: El JSON debe ser: ${outputFormat}`;
+        
+        TAREA: Analiza patrones de directores, estéticas (ej: Wes Anderson, Noir, Sci-fi años 80) y temas. Recomienda una PELÍCULA que profundice en sus gustos sin ser repetitiva.
+        FORMATO: ${outputFormat}`;
     }
     else if (mode === 'song_from_movies') {
-      outputFormat = `{"vibra": "...", "cancion": "Título", "artista": "Nombre Artista", "motivo": "..."}`;
+      outputFormat = `{"vibra": "...", "cancion": "...", "artista": "...", "motivo": "..."}`;
       prompt = `${baseSystem}
-        CONTEXTO CINEMATOGRÁFICO RECIENTE:
+        CONTEXTO CINEMATOGRÁFICO:
         ${movieContext || "No disponible."}
         ${favoritesContext}
-        TAREA: Traduce la estética visual y emocional de estas películas a un lenguaje musical. Recomienda una CANCIÓN exacta.
-        REGLA: El JSON debe ser: ${outputFormat}`;
+        
+        TAREA: Imagina la banda sonora ideal para las películas favoritas del usuario. Recomienda UNA canción exacta que podría sonar en los créditos de su vida.
+        FORMATO: ${outputFormat}`;
     }
     else if (mode === 'hybrid') {
       outputFormat = `{"vibra": "...", "pelicula": "...", "cancion": "...", "artista": "...", "motivo": "..."}`;
       prompt = `${baseSystem}
-        CONTEXTO TOTAL:
-        Música: ${trackContext || "N/A"}
-        Cine: ${movieContext || "N/A"}
+        CONTEXTO INTEGRADO:
+        Música reciente: ${trackContext || "N/A"}
+        Cine reciente: ${movieContext || "N/A"}
         ${favoritesContext}
-        TAREA: Crea una "Experiencia Completa". Recomienda una PELÍCULA y una CANCIÓN que tengan una conexión espiritual y estética profunda.
-        REGLA: El JSON debe ser: ${outputFormat}`;
+        
+        TAREA: Crea una "Experiencia Completa". Recomienda una PELÍCULA y una CANCIÓN que compartan un ADN emocional idéntico. Explica su conexión espiritual.
+        FORMATO: ${outputFormat}`;
     }
 
     // 3. Call Gemini
@@ -172,8 +194,15 @@ export const generateRecommendation = async (req, res) => {
     try {
       recommendationText = await geminiGenerate(prompt, { temperature: 0.8 });
     } catch (err) {
-      console.error("Gemini failed:", err.message);
-      return res.status(503).json({ error: 'IA saturada. Reintenta en breve.' });
+      console.warn("Gemini failed, trying Groq fallback...");
+      try {
+        recommendationText = await groqGenerate(prompt);
+      } catch (groqErr) {
+        if (err.message === 'QUOTA_EXCEEDED') {
+          return res.status(429).json({ error: 'Límite de cuota alcanzado en todos los proveedores. Inténtalo en unos minutos.' });
+        }
+        return res.status(503).json({ error: 'Servicios de IA temporalmente saturados.' });
+      }
     }
 
     let recJSON;
@@ -370,9 +399,16 @@ REGLA CRÍTICA: Debes devolver un JSON válido estrictamente en este formato:
     let text;
     try {
       text = await geminiGenerate(`${systemInstruction}\n\n${context}`, { temperature: 0.8 });
-    } catch (geminiErr) {
-      console.error('All Gemini models failed (list):', geminiErr.message);
-      return res.status(503).json({ error: 'El servicio de IA está temporalmente saturado. Inténtalo de nuevo en unos segundos.' });
+    } catch (err) {
+      console.warn("Gemini (list) failed, trying Groq fallback...");
+      try {
+        text = await groqGenerate(`${systemInstruction}\n\n${context}`);
+      } catch (groqErr) {
+        if (err.message === 'QUOTA_EXCEEDED') {
+          return res.status(429).json({ error: 'Límite de cuota alcanzado. Espera unos minutos.' });
+        }
+        return res.status(503).json({ error: 'El servicio de IA está temporalmente saturado.' });
+      }
     }
 
     let jsonResponse;

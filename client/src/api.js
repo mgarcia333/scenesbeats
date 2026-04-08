@@ -65,9 +65,11 @@ export const recommendationApi = {
 export const movieApi = {
   search: (query) => nodeApi.get(`/movie/search?query=${query}`),
   getLetterboxd: (username) => nodeApi.get(`/movie/letterboxd/${username}`),
+  getOne: (id) => nodeApi.get(`/movie/${id}`),
 };
 
 export const spotifyApi = {
   createPlaylist: (data) => nodeApi.post('/spotify/playlist', data),
+  getTrack: (id) => nodeApi.get(`/spotify/track/${id}`),
 };
 

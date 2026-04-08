@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { listsApi, recommendationApi, spotifyApi } from '../api';
+import { listsApi, recommendationApi, spotifyApi, movieApi, nodeApi } from '../api';
 import {
   ArrowLeft, Trash2, X, Sparkles, Music, Film,
-  ListMusic, Loader2, ExternalLink, Check, ChevronDown, ChevronUp
+  ListMusic, Loader2, ExternalLink, Check, ChevronDown, ChevronUp, Search, Plus
 } from 'lucide-react';
 
 /* ── Item card ────────────────────────────── */
@@ -127,6 +127,12 @@ const ListView = () => {
   // Deleting state
   const [deleting, setDeleting] = useState(false);
 
+  // Quick search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchType, setSearchType] = useState('movie'); // 'movie' or 'song'
+
   useEffect(() => { if (id) fetchList(); }, [id]);
 
   const fetchList = async () => {
@@ -192,6 +198,55 @@ const ListView = () => {
       setExportMsg({ type: 'error', text: t('lists.spotifyError') });
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleQuickSearch = async (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      let res;
+      if (searchType === 'movie') {
+        res = await movieApi.search(query);
+        setSearchResults(res.data);
+      } else {
+        const spotifyRes = await nodeApi.get(`/spotify/search?query=${query}&type=track`);
+        const tracks = spotifyRes.data.tracks.items.map(t => ({
+          id: t.id,
+          title: t.name,
+          subtitle: t.artists[0].name,
+          image_url: t.album.images[0]?.url,
+          type: 'song'
+        }));
+        setSearchResults(tracks);
+      }
+    } catch (err) {
+      console.error('Quick search error:', err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAddItem = async (item) => {
+    try {
+      const res = await listsApi.addItem(id, {
+        external_id: String(item.id),
+        title: item.title || item.name,
+        subtitle: item.subtitle || item.year || item.artist,
+        image_url: item.image_url || item.poster || item.artwork,
+        type: item.type || searchType
+      });
+      setList(prev => ({ ...prev, items: [...(prev.items || []), res.data] }));
+      setSearchQuery('');
+      setSearchResults([]);
+    } catch (err) {
+      console.error('Add item error:', err);
     }
   };
 
@@ -299,6 +354,55 @@ const ListView = () => {
         <div className="lists-empty" style={{ marginTop: '2rem' }}>
           <ListMusic size={40} style={{ opacity: 0.25 }} />
           <p className="lists-empty-text">{t('list.empty')}</p>
+        </div>
+      )}
+
+      {/* ── Quick Add section ── */}
+      {isOwner && (
+        <div className="lv-quick-add">
+          <h2 className="section-title">{t('lists.addItem') || 'Añadir nuevo contenido'}</h2>
+          <div className="lv-search-controls">
+            <div className="lv-search-input-box">
+              <Search size={18} className="lv-search-icon" />
+              <input
+                type="text"
+                className="lv-search-input"
+                placeholder={searchType === 'movie' ? 'Buscar película...' : 'Buscar canción...'}
+                value={searchQuery}
+                onChange={handleQuickSearch}
+              />
+              {searching && <Loader2 size={18} className="spin lv-search-loader" />}
+            </div>
+            <div className="lv-search-type-toggle">
+              <button 
+                className={`type-btn ${searchType === 'movie' ? 'active' : ''}`}
+                onClick={() => { setSearchType('movie'); setSearchQuery(''); setSearchResults([]); }}
+              >
+                <Film size={14} /> Pelis
+              </button>
+              <button 
+                className={`type-btn ${searchType === 'song' ? 'active' : ''}`}
+                onClick={() => { setSearchType('song'); setSearchQuery(''); setSearchResults([]); }}
+              >
+                <Music size={14} /> Música
+              </button>
+            </div>
+          </div>
+
+          {searchResults.length > 0 && (
+            <div className="lv-quick-results animate-fadeIn">
+              {searchResults.map((res, idx) => (
+                <div key={res.id + idx} className="lv-quick-result-item" onClick={() => handleAddItem(res)}>
+                  <img src={res.image_url || res.poster || res.artwork} alt="" className="qr-img" />
+                  <div className="qr-info">
+                    <div className="qr-title">{res.title || res.name}</div>
+                    <div className="qr-sub">{res.subtitle || res.year || res.artist}</div>
+                  </div>
+                  <Plus size={18} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

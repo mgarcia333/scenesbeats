@@ -7,6 +7,16 @@ import { Server } from "socket.io";
 
 dotenv.config();
 
+// Global crash protection
+process.on('uncaughtException', (err) => {
+  console.error('🔥 CRITICAL: Uncaught Exception:', err.message);
+  console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🌊 CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

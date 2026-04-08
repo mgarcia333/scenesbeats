@@ -167,3 +167,37 @@ export const createPlaylist = async (req, res) => {
   }
 };
 
+/**
+ * Get track details from Spotify by ID
+ */
+export const getTrackDetails = async (req, res) => {
+  let { id } = req.params;
+  
+  // Patch for legacy corrupted IDs (e.g. 5cc7YU35GPW2gXWcWW3Zbk-0)
+  if (id.includes('-')) {
+    id = id.split('-')[0];
+  }
+
+  try {
+    const response = await axios.get(`https://api.spotify.com/v1/tracks/${id}`, {
+      headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+    });
+    
+    const track = response.data;
+    res.json({
+      id: track.id,
+      name: track.name,
+      artist: track.artists[0].name,
+      album: track.album.name,
+      artwork: track.album.images[0]?.url,
+      release_date: track.album.release_date,
+      duration_ms: track.duration_ms,
+      preview_url: track.preview_url,
+      external_url: track.external_urls.spotify
+    });
+  } catch (error) {
+    console.error(`Spotify Detail Error for track ${id}:`, error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch track details' });
+  }
+};
+

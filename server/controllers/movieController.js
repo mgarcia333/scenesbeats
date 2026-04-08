@@ -92,3 +92,33 @@ export const searchMovies = async (req, res) => {
     res.status(500).json({ error: 'Movie search failed' });
   }
 };
+
+/**
+ * Get movie details from TMDB by ID
+ */
+export const getMovieDetails = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const response = await axios.get(`https://api.themoviedb.org/3/movie/${id}`, {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        language: 'es-ES'
+      }
+    });
+    
+    const movie = response.data;
+    res.json({
+      id: movie.id,
+      title: movie.title,
+      year: movie.release_date?.split('-')[0] || 'N/A',
+      poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
+      overview: movie.overview,
+      genres: movie.genres?.map(g => g.name),
+      runtime: movie.runtime,
+      tagline: movie.tagline
+    });
+  } catch (error) {
+    console.error('TMDB Detail Error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch movie details' });
+  }
+};

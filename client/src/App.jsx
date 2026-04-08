@@ -12,6 +12,7 @@ import Login from './views/Login';
 import Register from './views/Register';
 import ListView from './views/ListView';
 import Lists from './views/Lists';
+import ItemDetail from './views/ItemDetail';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { io } from 'socket.io-client';
@@ -90,6 +91,16 @@ const MainLayout = () => {
                     <Route path="/list/:id" element={
                         <PrivateRoute>
                             <ListView />
+                        </PrivateRoute>
+                    } />
+                    <Route path="/movie/:id" element={
+                        <PrivateRoute>
+                            <ItemDetail type="movie" />
+                        </PrivateRoute>
+                    } />
+                    <Route path="/song/:id" element={
+                        <PrivateRoute>
+                            <ItemDetail type="song" />
                         </PrivateRoute>
                     } />
                 </Routes>

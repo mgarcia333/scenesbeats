@@ -187,12 +187,8 @@ const Register = () => {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary-glow" disabled={loading}>
-                {loading ? t('auth.loggingIn') : (
-                  <>
-                    {t('landing.regBtn')} <ArrowRight size={18} />
-                  </>
-                )}
+              <button type="submit" className="btn-primary-solid" disabled={loading}>
+                {loading ? t('auth.loggingIn') : t('landing.regBtn')}
               </button>
             </form>
           </div>

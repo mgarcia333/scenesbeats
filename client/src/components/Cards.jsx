@@ -1,25 +1,10 @@
 import React from 'react';
-import { Star } from 'lucide-react';
-
-export const renderStars = (rating) => {
-  if (!rating) return <div className="stars-container" style={{ opacity: 0 }}><Star size={12} /></div>;
-  const num = parseFloat(rating);
-  const fullStars = Math.floor(num);
-  const halfStar = num % 1 !== 0;
-  return (
-    <div className="stars-container">
-      {[...Array(fullStars)].map((_, i) => <Star key={i} size={12} fill="currentColor" style={{ display: 'inline' }} />)}
-      {halfStar ? "½" : ""}
-    </div>
-  );
-};
+import { Link } from 'react-router-dom';
 
 export const MovieCard = ({ movie, isDragging }) => (
   <div className="movie-card" style={{ userSelect: 'none' }}>
-    <a 
-      href={movie.link || "#"} 
-      target="_blank" 
-      rel="noopener noreferrer" 
+    <Link 
+      to={`/movie/${movie.id}`}
       style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
     >
       <img 
@@ -28,11 +13,10 @@ export const MovieCard = ({ movie, isDragging }) => (
         alt={movie.title || movie.name} 
         draggable="false"
       />
-    </a>
+    </Link>
     <div className="movie-name" title={movie.title || movie.name}>{movie.title || movie.name}</div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div className="movie-year">{movie.year}</div>
-      {renderStars(movie.rating)}
     </div>
   </div>
 );
@@ -45,15 +29,16 @@ export const SongCard = ({ song, isDragging }) => (
       pointerEvents: isDragging ? 'none' : 'auto' 
     }}
   >
-    <img 
-      src={song.artwork} 
-      alt={song.name} 
-      className="song-artwork" 
-      draggable="false"
-    />
+    <Link to={`/song/${song.id}`}>
+      <img 
+        src={song.artwork} 
+        alt={song.name} 
+        className="song-artwork" 
+        draggable="false"
+      />
+    </Link>
     <div className="song-name">{song.name}</div>
     <div className="song-artist">{song.artist}</div>
-    {renderStars(0)}
   </div>
 );
 

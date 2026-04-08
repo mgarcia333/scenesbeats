@@ -186,12 +186,8 @@ const Login = () => {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn-primary-glow" disabled={loading}>
-                {loading ? t('auth.loggingIn') : (
-                  <>
-                    {t('landing.loginBtn')} <ArrowRight size={18} />
-                  </>
-                )}
+              <button type="submit" className="btn-primary-solid" disabled={loading}>
+                {loading ? t('auth.loggingIn') : t('landing.loginBtn')}
               </button>
             </form>
           </div>

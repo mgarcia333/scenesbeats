@@ -27,8 +27,8 @@ const Search = () => {
         if (searchType === 'movies') {
           setResults(data);
         } else {
-          const songs = data.tracks.items.map((track, idx) => ({
-            id: `${track.id}-${idx}`,
+          const songs = data.tracks.items.map((track) => ({
+            id: track.id,
             name: track.name,
             artist: track.artists[0].name,
             artwork: track.album.images[0]?.url
