@@ -1,0 +1,91 @@
+/* Profile View */
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  background-color: var(--surface-color);
+  border-radius: 24px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+@media (min-width: 640px) {
+  .profile-header { flex-direction: row; align-items: flex-start; }
+}
+
+.profile-stats {
+  display: flex; gap: 1.5rem; justify-content: center; margin-top: 1rem;
+}
+
+/* Gustos / Favorites */
+.gustos-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.gusto-category {
+  background-color: var(--surface-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Recommendations */
+.rec-modes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.rec-output-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Community */
+.community-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .community-layout { grid-template-columns: 1fr 320px; }
+}
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Lists */
+.lists-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+.list-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 0.875rem;
+}
+
+/* Item Detail */
+.detail-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 3rem;
+  margin-top: 1rem;
+}

@@ -1,0 +1,47 @@
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Theme Variables (Default Dark) */
+  --bg-color: #0d1117;
+  --surface-color: #161b22;
+  --surface-alt: #21262d;
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --primary-color: #1db954;
+  --primary-hover: #1ed760;
+  --border-color: #30363d;
+  --header-bg: #0d1117;
+  --nav-bg: #0d1117;
+  --card-shadow: 0 4px 0px rgba(0,0,0,0.5);
+
+  color-scheme: dark;
+  color: var(--text-secondary);
+  background-color: var(--bg-color);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.light-mode {
+  --bg-color: #ffffff;
+  --surface-color: #ffffff;
+  --surface-alt: #f6f8fa;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-muted: #8c959f;
+  --primary-color: #1db954;
+  --primary-hover: #1aa34a;
+  --border-color: #d0d7de;
+  --header-bg: #ffffff;
+  --nav-bg: #ffffff;
+  --card-shadow: 0 4px 0px rgba(0,0,0,0.05);
+
+  color-scheme: light;
+  color: var(--text-secondary);
+  background-color: var(--bg-color);
+}
