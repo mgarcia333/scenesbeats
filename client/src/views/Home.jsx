@@ -5,17 +5,12 @@ import HorizontalScroll from '../components/HorizontalScroll'
 import { MovieCard, SongCard } from '../components/Cards'
 import { Disc, Sparkles, Star } from 'lucide-react'
 
-import LoadingScreen from '../components/LoadingScreen'
-
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { socket } from '../App';
 
 const Home = () => {
   const { t } = useTranslation();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   const [recentSongs, setRecentSongs] = useState([]);
   const [recentMovies, setRecentMovies] = useState([]);
   const [myRecentMovies, setMyRecentMovies] = useState([]);
@@ -54,34 +49,31 @@ const Home = () => {
     const initHome = async () => {
       try {
         setLoading(true);
-        // Resolve Letterboxd username: Prefer user state, fallback to localStorage
-        const lbUser = user?.letterboxd_username || localStorage.getItem('lb_username');
+        const lbUser = localStorage.getItem('lb_username');
         
         // Parallel fetch for public data
-        const movieRes = await fetch('/api/recommendation/trending');
+        const [authRes, movieRes] = await Promise.all([
+          fetch('/api/auth/me', { credentials: 'include' }),
+          fetch('/api/recommendation/trending')
+        ]);
 
-        if (isAuthenticated && user) {
-           // Sync localStorage if it differs (useful for keeping views in sync)
-           if (user.letterboxd_username && localStorage.getItem('lb_username') !== user.letterboxd_username) {
-             localStorage.setItem('lb_username', user.letterboxd_username);
-           }
-           
-           try {
-             const spotifyRes = await fetch('/api/spotify/recently-played', { credentials: 'include' });
-             if (spotifyRes.ok) {
-                const spotifyData = await spotifyRes.json();
-                const songs = spotifyData.items.map(item => ({
-                  id: item.track.id,
-                  name: item.track.name,
-                  artist: item.track.artists[0].name,
-                  artwork: item.track.album.images[0]?.url
-                }));
-                setRecentSongs(songs);
-             } else if (spotifyRes.status === 401) {
-               console.warn("Spotify session is not active or unauthorized.");
-             }
-           } catch (err) {
-             console.error("Spotify fetch error:", err);
+        if (authRes.ok) {
+           const authData = await authRes.json();
+           if (authData.authenticated) {
+              setIsAuthenticated(true);
+              setUser(authData.user);
+
+              const spotifyRes = await fetch('/api/spotify/recently-played', { credentials: 'include' });
+              if (spotifyRes.ok) {
+                 const spotifyData = await spotifyRes.json();
+                 const songs = spotifyData.items.map(item => ({
+                   id: item.track.id,
+                   name: item.track.name,
+                   artist: item.track.artists[0].name,
+                   artwork: item.track.album.images[0]?.url
+                 }));
+                 setRecentSongs(songs);
+              }
            }
         }
 
@@ -91,17 +83,10 @@ const Home = () => {
         }
 
         if (lbUser) {
-          try {
-            const lbRes = await fetch(`/api/movie/letterboxd/${lbUser}`);
-            if (lbRes.ok) {
-              const lbData = await lbRes.json();
-              setMyRecentMovies(lbData);
-            } else if (lbRes.status === 404) {
-              console.warn(`Letterboxd user "${lbUser}" not found or has no recent activity.`);
-              // Optional: Clear or suggest clearing invalid username
-            }
-          } catch (err) {
-            console.error("Letterboxd fetch error:", err);
+          const lbRes = await fetch(`/api/movie/letterboxd/${lbUser}`);
+          if (lbRes.ok) {
+            const lbData = await lbRes.json();
+            setMyRecentMovies(lbData);
           }
         }
 
@@ -113,33 +98,14 @@ const Home = () => {
     };
     
     initHome();
-  }, [user, isAuthenticated]);
-
-  useEffect(() => {
-    // Listen for real-time Spotify updates
-    socket.on('spotify_update', (newTrack) => {
-      console.log("Real-time Spotify update received:", newTrack);
-      setRecentSongs(prev => {
-        // Prevent duplicates if by some chance they occur
-        if (prev.length > 0 && prev[0].id === newTrack.id) return prev;
-        
-        // Add new track at the beginning and keep last 20
-        const updated = [newTrack, ...prev];
-        return updated.slice(0, 20);
-      });
-    });
-
-    return () => {
-      socket.off('spotify_update');
-    };
   }, []);
 
   const handleLogin = () => {
-    navigate('/login');
+    window.location.href = '/api/auth/spotify';
   };
 
 
-  if (loading || authLoading) return <LoadingScreen message={t('home.loading')} />
+  if (loading) return <div className="loading-screen">{t('home.loading')}</div>
 
 
   if (!isAuthenticated) {
@@ -148,7 +114,7 @@ const Home = () => {
         <div className="hero-section">
           <h2 className="hero-title">{t('home.welcomeTitle')}</h2>
           <p className="hero-subtitle">{t('home.welcomeSubtitle')}</p>
-          <button onClick={handleLogin} className="btn-glossy" style={{ padding: '1.2rem 3rem', fontSize: '1.1rem' }}>
+          <button onClick={handleLogin} className="spotify-login-btn">
             {t('home.loginSpotify')}
           </button>
         </div>
@@ -159,39 +125,38 @@ const Home = () => {
   return (
     <div className="view-container">
       {myRecentMovies.length > 0 && (
-        <section className="feed-section" style={{ marginBottom: '2.5rem' }}>
+        <section className="feed-section">
           <h2 className="section-title">{t('home.myRecentMovies')}</h2>
           <HorizontalScroll>
-            {myRecentMovies.map((movie, idx) => (
-              <MovieCard key={`movie-${movie.id || idx}-${idx}`} movie={movie} />
+            {myRecentMovies.map(movie => (
+              <MovieCard key={movie.id} movie={movie} />
             ))}
           </HorizontalScroll>
         </section>
       )}
 
       {recentSongs.length > 0 && (
-        <section className="feed-section" style={{ marginBottom: '2.5rem' }}>
+        <section className="feed-section" style={{ marginTop: myRecentMovies.length > 0 ? '2.5rem' : '0' }}>
           <h2 className="section-title">{t('home.recentSongs')}</h2>
           <HorizontalScroll>
-            {recentSongs.map((song, idx) => (
-              <SongCard key={`song-${song.id || idx}-${idx}`} song={song} />
+            {recentSongs.map(song => (
+              <SongCard key={song.id} song={song} />
             ))}
           </HorizontalScroll>
         </section>
       )}
 
 
-      <section className="feed-section" style={{ marginBottom: '1.5rem' }}>
+      <section className="feed-section" style={{ marginTop: '2.5rem' }}>
         <h2 className="section-title">{t('home.friendActivity')}</h2>
         <HorizontalScroll>
-          {friendActivity.map((item, idx) => (
-            <ActivityCard key={`activity-${item.id || idx}-${idx}`} activity={item} />
+          {friendActivity.map(item => (
+            <ActivityCard key={item.id} activity={item} />
           ))}
         </HorizontalScroll>
       </section>
     </div>
   )
-
 }
 
 

@@ -38,9 +38,8 @@ const HorizontalScroll = ({ children }) => {
       onMouseMove={handleMouseMove}
     >
       {React.Children.map(children, child => {
-        // We pass the isDragging prop to children components that need it
-        // but avoid passing it to standard DOM elements (strings) to prevent warnings
-        if (React.isValidElement(child) && typeof child.type !== 'string') {
+        // We pass the isDragging prop to children if we need to disable clicks
+        if (React.isValidElement(child)) {
           return React.cloneElement(child, { isDragging });
         }
         return child;
