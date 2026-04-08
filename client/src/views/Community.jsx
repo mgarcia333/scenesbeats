@@ -1,117 +1,122 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MovieCard, SongCard } from '../components/Cards';
-import HorizontalScroll from '../components/HorizontalScroll';
-import { Search, Clapperboard, Music } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import ActivityCard from '../components/ActivityCard';
+import { Users, UserPlus, Zap } from 'lucide-react';
 
 const Community = () => {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState('movies'); // 'movies' or 'music'
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const handleSearch = async (term = searchTerm) => {
-    if (!term.trim()) {
-      setResults([]);
-      return;
+  const { user } = useAuth();
+  
+  // Hardcoded real community activity for demo
+  const [friendActivity] = useState([
+    {
+      id: 1,
+      user: "Alex",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
+      action: t('home.listened') || "escuchó",
+      item: "Midnights - Taylor Swift",
+      meta: t('home.timeAgo', { count: 2, unit: 'h' }) || "hace 2h",
+      comment: "Increíble producción, 'Anti-Hero' es un hit instantáneo."
+    },
+    {
+      id: 2,
+      user: "Maria",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria",
+      action: t('home.reacted') || "reaccionó a",
+      item: "Curtain Call - Eminem",
+      meta: t('home.timeAgo', { count: 5, unit: 'h' }) || "hace 5h",
+      comment: "Nostalgia pura."
+    },
+    {
+      id: 3,
+      user: "Dani",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Dani",
+      action: t('home.watched') || "vio",
+      item: "Inception (2010)",
+      meta: t('home.timeAgo', { count: 1, unit: 'd' }) || "hace 1d",
+      comment: "Todavía intentando entender el final."
+    },
+    {
+      id: 4,
+      user: "Carla",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Carla",
+      action: t('home.listened') || "escuchó",
+      item: "Blonde - Frank Ocean",
+      meta: "hace 3h",
+      comment: "Perfecto para este clima."
     }
-    setLoading(true);
-    try {
-      const endpoint = searchType === 'movies' 
-        ? `/api/movie/search?query=${term}` 
-        : `/api/spotify/search?query=${term}&type=track`;
-      
-      const response = await fetch(endpoint, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        if (searchType === 'movies') {
-          setResults(data);
-        } else {
-          // Spotify returns { tracks: { items: [] } }
-          const songs = data.tracks.items.map(track => ({
-            id: track.id,
-            name: track.name,
-            artist: track.artists[0].name,
-            artwork: track.album.images[0]?.url
-          }));
-          setResults(songs);
-        }
-      }
-    } catch (err) {
-      console.error("Search error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      handleSearch();
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, searchType]);
+  ]);
 
   return (
     <div className="view-container">
-      <div className="search-header">
-        <div className="search-bar-container">
-          <span className="search-icon"><Search size={20} /></span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder={t('search.placeholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="search-tabs">
-          <button 
-            className={`search-tab ${searchType === 'movies' ? 'active' : ''}`}
-            onClick={() => setSearchType('movies')}
-          >
-            <Clapperboard size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> {t('search.movies')}
-          </button>
-          <button 
-            className={`search-tab ${searchType === 'music' ? 'active' : ''}`}
-            onClick={() => setSearchType('music')}
-          >
-            <Music size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> {t('search.music')}
-          </button>
-        </div>
+      <div className="community-header">
+        <h2 className="section-title">{t('nav.community') || "Comunidad"}</h2>
+        <p className="rec-subtitle">Descubre qué están escuchando y viendo tus amigos en tiempo real.</p>
       </div>
 
-      <div className="search-results">
-        {loading ? (
-          <div className="loading-screen" style={{ height: 'auto', padding: '4rem' }}>
-            {t('search.searching')}
+      <div className="community-layout animate-fadeIn">
+        {/* Left side: Activity Feed */}
+        <div className="activity-feed">
+          <div className="feed-header">
+            <Zap size={18} className="text-primary" />
+            <span>Actividad Reciente</span>
           </div>
-        ) : results.length > 0 ? (
-          <div className="results-grid">
-            {results.map(item => (
-              searchType === 'movies' ? (
-                <MovieCard key={item.id} movie={item} />
-              ) : (
-                <SongCard key={item.id} song={item} />
-              )
+          
+          <div className="feed-items">
+            {friendActivity.map(item => (
+              <div key={item.id} className="feed-item-wrapper animate-fadeInUp">
+                <ActivityCard activity={item} />
+              </div>
             ))}
           </div>
-        ) : searchTerm.trim() ? (
-          <div className="stat-label" style={{ padding: '4rem', textAlign: 'center' }}>
-            {t('search.noResults', { query: searchTerm })}
+        </div>
+
+        {/* Right side: Social Tools (Future) */}
+        <div className="social-sidebar">
+          <div className="social-card glass">
+            <h4>Sugerencias para ti</h4>
+            <div className="suggested-users">
+               <div className="suggested-user">
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Marc" alt="" />
+                  <div className="user-meta">
+                    <span className="name">Marc G.</span>
+                    <span className="mutual">3 amigos en común</span>
+                  </div>
+                  <button className="add-btn"><UserPlus size={16} /></button>
+               </div>
+               <div className="suggested-user">
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Elena" alt="" />
+                  <div className="user-meta">
+                    <span className="name">Elena R.</span>
+                    <span className="mutual">Le gusta tu misma música</span>
+                  </div>
+                  <button className="add-btn"><UserPlus size={16} /></button>
+               </div>
+            </div>
+            <button className="view-all-btn">Ver todos</button>
           </div>
-        ) : (
-          <div className="stat-label" style={{ padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
-            <Search size={48} style={{ display: 'block', margin: '0 auto 1rem', opacity: 0.3 }} />
-            Explora la comunidad Scenes & Beats
+
+          <div className="social-card glass stats-card">
+            <div className="stat-row">
+               <Users size={20} />
+               <div className="stat-info">
+                  <span className="val">12</span>
+                  <span className="lab">Seguidores</span>
+               </div>
+            </div>
+            <div className="stat-row">
+               <UserPlus size={20} />
+               <div className="stat-info">
+                  <span className="val">45</span>
+                  <span className="lab">Siguiendo</span>
+               </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default Community;
-

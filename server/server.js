@@ -41,7 +41,7 @@ app.use("/api/movie", movieRoutes);
 
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", service: "Scenes & Beats API" });
+  res.json({ status: "ok", service: "ScenesBeats API" });
 });
 
 import SpotifyMonitor from "./utils/spotifyMonitor.js";
@@ -71,3 +71,5 @@ io.on("connection", (socket) => {
 httpServer.listen(PORT, () => {
   console.log(`Server is running on http://127.0.0.1:${PORT}`);
 });
+
+

@@ -2,6 +2,66 @@ import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { parseStringPromise } from 'xml2js';
 
+// Model fallback chain — tries in order until one succeeds
+const MODEL_CHAIN = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
+];
+
+/**
+ * Calls Gemini with automatic retry and model fallback.
+ * Retries on 503 (overloaded) up to 3 times per model.
+ */
+const geminiGenerate = async (prompt, generationConfig = {}) => {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  let lastError;
+
+  for (const modelName of MODEL_CHAIN) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { 
+            temperature: 0.75, 
+            responseMimeType: 'application/json', 
+            maxOutputTokens: 1000,
+            ...generationConfig 
+          }
+        });
+        const text = result.response.text().replace(/```json|```/gi, '').trim();
+        console.log(`✅ Gemini responded with model: ${modelName} (attempt ${attempt})`);
+        return text;
+      } catch (err) {
+        lastError = err;
+        const errMsg = err.message?.toLowerCase() || '';
+        const isOverloaded = err.status === 503 || errMsg.includes('503') || errMsg.includes('overloaded') || errMsg.includes('high demand') || errMsg.includes('too many requests') || err.status === 429;
+        const isNotFound = err.status === 404 || errMsg.includes('404') || errMsg.includes('not found');
+        
+        if (isNotFound) {
+          console.warn(`⚠️ Model ${modelName} not found, trying next...`);
+          break; // Try next model immediately
+        }
+        
+        if (isOverloaded && attempt < 3) {
+          const wait = attempt * 2000; // Increased wait
+          console.warn(`⏳ Model ${modelName} overloaded (attempt ${attempt}). Retrying in ${wait}ms...`);
+          await new Promise(r => setTimeout(r, wait));
+        } else if (isOverloaded) {
+          console.warn(`⚠️ Model ${modelName} failed after 3 attempts, trying next model...`);
+          break;
+        } else {
+          console.error(`❌ Unexpected Gemini error (${modelName}):`, err.message);
+          throw err; 
+        }
+      }
+    }
+  }
+
+  throw lastError || new Error('All Gemini models failed');
+};
+
 /**
  * Helper to fetch Letterboxd context for the AI
  */
@@ -25,157 +85,150 @@ const fetchLetterboxdContext = async (username) => {
   }
 };
 
+
 /**
- * Controller to generate a movie recommendation based on user contextual data.
+ * Controller to generate highly personalized recommendations based on various contexts.
+ * Supports 4 modes: movie_from_music, movie_from_movies, song_from_movies, and hybrid.
  */
 export const generateRecommendation = async (req, res) => {
   try {
-    const { mode = 'spotify', lb_username, fav_movies = [], fav_songs = [] } = req.body;
+    const { mode = 'movie_from_music', lb_username, fav_movies = [], fav_songs = [] } = req.body;
 
-    // Initialize Gemini Client
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    
     let trackContext = "";
     let movieContext = "";
     let favoritesContext = "";
 
-    // 1. Fetch Spotify Data (always useful for "vibe")
-    try {
-      const recentlyPlayedRes = await axios.get('https://api.spotify.com/v1/me/player/recently-played?limit=10', {
-        headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
-      });
-      const items = recentlyPlayedRes.data.items;
-      if (items && items.length > 0) {
-        trackContext = items.map((item, index) => {
-          return `${index + 1}. "${item.track.name}" by ${item.track.artists.map(a => a.name).join(', ')}`;
-        }).join('\n');
-      }
-    } catch (err) {
-      console.warn("Spotify fetch failed (non-fatal):", err.message);
+    // 1. Fetch Contexts
+    if (req.spotifyToken) {
+      try {
+        const recentlyPlayedRes = await axios.get('https://api.spotify.com/v1/me/player/recently-played?limit=15', {
+          headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+        });
+        const items = recentlyPlayedRes.data.items;
+        if (items?.length > 0) {
+          trackContext = items.map((item, i) => `${i + 1}. "${item.track.name}" by ${item.track.artists.map(a => a.name).join(', ')}`).join('\n');
+        }
+      } catch (err) { console.warn("Spotify context fetch failed:", err.message); }
     }
 
-    // 2. Fetch Letterboxd Data if needed
-    if (lb_username && (mode === 'letterboxd' || mode === 'hybrid')) {
+    if (lb_username) {
       movieContext = await fetchLetterboxdContext(lb_username);
     }
 
-    // 3. Format favorites
     if (fav_movies.length > 0 || fav_songs.length > 0) {
-      favoritesContext = "Favoritos del usuario:\n";
-      if (fav_movies.length > 0) {
-        favoritesContext += `- Películas: ${fav_movies.map(m => m.title || m.name).join(', ')}\n`;
-      }
-      if (fav_songs.length > 0) {
-        favoritesContext += `- Canciones: ${fav_songs.map(s => s.name || s.title).join(', ')}\n`;
-      }
+      favoritesContext = "FAVORITOS DEL USUARIO:\n";
+      if (fav_movies.length > 0) favoritesContext += `- Películas: ${fav_movies.map(m => m.title).join(', ')}\n`;
+      if (fav_songs.length > 0) favoritesContext += `- Canciones: ${fav_songs.map(s => s.title).join(', ')}\n`;
     }
 
-    // 4. Construct Prompt based on mode
+    // 2. Construct Dynamic Prompt
+    const baseSystem = `Eres un conservador cultural de élite, experto en la sinergia entre el cine y la música. Analiza el contexto proporcionado y devuelve un JSON estricto.`;
+    
     let prompt = "";
-    const systemInstruction = `Eres un experto curador de cine de élite. Tu misión es analizar el perfil del usuario (música, cine y favoritos) para recomendar la película perfecta.
-REGLA CRÍTICA 1: La recomendación DEBE ser SOLO UNA PELÍCULA. No recomiendes canciones, álbumes, series ni listas.
-REGLA CRÍTICA 2: El título de la película debe ser el nombre oficial para facilitar su búsqueda en bases de datos (puedes incluir el año si la película es poco común).
-REGLA CRÍTICA 3: No recomiendes ninguna película que el usuario YA HAYA VISTO (estarán listadas en su historial de Letterboxd).
-Debes devolver un JSON estricto con:
-{
-  "vibra": "Un análisis profundo y detallado del 'mood' o estado de ánimo detectado del usuario.",
-  "pelicula": "Título exacto de la película recomendada",
-  "motivo": "Una explicación magistral y super detallada de por qué esta película es la elección perfecta hoy, conectando puntos específicos entre su música reciente, sus películas favoritas y su actividad en Letterboxd."
-}`;
+    let outputFormat = "";
 
-    if (mode === 'letterboxd') {
-      prompt = `${systemInstruction}
-CONTEXTO DE CINE (Letterboxd):
-${movieContext || "No hay datos recientes."}
-
-Basándote en este historial, identifica patrones de directores, géneros o estéticas que le gusten y sorpréndelo con una joya cinematográfica que NO esté en esa lista pero que le vaya a encantar.`;
-    } else if (mode === 'hybrid') {
-      prompt = `${systemInstruction}
-CONTEXTO TOTAL:
-MÚSICA RECIENTE (Spotify):
-${trackContext || "No hay canciones recientes."}
-
-CINE RECIENTE (Letterboxd):
-${movieContext || "No hay películas recientes."}
-
-${favoritesContext}
-
-Analiza la sinergia entre su música y su cine. Busca el 'hilo conductor' emocional. Dale muchísima importancia a lo que haya puntuado con 4 o 5 estrellas. Crea una recomendación que sea una experiencia completa.`;
-    } else {
-      // Default: Spotify mode
-      prompt = `${systemInstruction}
-MÚSICA RECIENTE (Spotify):
-${trackContext || "No hay canciones recientes."}
-
-Analiza la vibra, el ritmo y el sentimiento de estas canciones. Traduce ese lenguaje musical a una experiencia cinematográfica. Recomienda la película ideal para este momento exacto.`;
+    if (mode === 'movie_from_music') {
+      outputFormat = `{"vibra": "...", "pelicula": "Título exacto", "motivo": "..."}`;
+      prompt = `${baseSystem}
+        CONTEXTO MUSICAL RECIENTE:
+        ${trackContext || "No disponible."}
+        ${favoritesContext}
+        TAREA: Basándote en el ritmo, la lírica y la estética de esta música, recomienda la PELÍCULA perfecta.
+        REGLA: El JSON debe ser: ${outputFormat}`;
+    } 
+    else if (mode === 'movie_from_movies') {
+      outputFormat = `{"vibra": "...", "pelicula": "Título exacto", "motivo": "..."}`;
+      prompt = `${baseSystem}
+        CONTEXTO CINEMATOGRÁFICO RECIENTE:
+        ${movieContext || "No disponible."}
+        ${favoritesContext}
+        TAREA: Analiza patrones de directores, géneros y narrativa. Recomienda una PELÍCULA que no haya visto.
+        REGLA: El JSON debe ser: ${outputFormat}`;
+    }
+    else if (mode === 'song_from_movies') {
+      outputFormat = `{"vibra": "...", "cancion": "Título", "artista": "Nombre Artista", "motivo": "..."}`;
+      prompt = `${baseSystem}
+        CONTEXTO CINEMATOGRÁFICO RECIENTE:
+        ${movieContext || "No disponible."}
+        ${favoritesContext}
+        TAREA: Traduce la estética visual y emocional de estas películas a un lenguaje musical. Recomienda una CANCIÓN exacta.
+        REGLA: El JSON debe ser: ${outputFormat}`;
+    }
+    else if (mode === 'hybrid') {
+      outputFormat = `{"vibra": "...", "pelicula": "...", "cancion": "...", "artista": "...", "motivo": "..."}`;
+      prompt = `${baseSystem}
+        CONTEXTO TOTAL:
+        Música: ${trackContext || "N/A"}
+        Cine: ${movieContext || "N/A"}
+        ${favoritesContext}
+        TAREA: Crea una "Experiencia Completa". Recomienda una PELÍCULA y una CANCIÓN que tengan una conexión espiritual y estética profunda.
+        REGLA: El JSON debe ser: ${outputFormat}`;
     }
 
-    // 5. Call Gemini
-    console.log(`Generating high-precision recommendation for mode: ${mode}...`);
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.75,
-        responseMimeType: "application/json"
-      }
-    });
+    // 3. Call Gemini
+    console.log(`Generating AI recommendation for mode: ${mode}...`);
+    let recommendationText;
 
-    const response = await result.response;
-    let recommendationText = response.text();
-    recommendationText = recommendationText.replace(/```json|```/gi, '').trim();
-    
-    let recommendationJSON;
     try {
-      recommendationJSON = JSON.parse(recommendationText);
-    } catch (parseError) {
-      recommendationJSON = {
-        vibra: "Ecléctica y Misteriosa",
-        pelicula: "Inception",
-        motivo: "Hubo un pequeño error en mi análisis, pero esta película es perfecta para cualquier mente curiosa."
-      };
+      recommendationText = await geminiGenerate(prompt, { temperature: 0.8 });
+    } catch (err) {
+      console.error("Gemini failed:", err.message);
+      return res.status(503).json({ error: 'IA saturada. Reintenta en breve.' });
     }
 
-    // 6. Fetch Movie Details from TMDB (Post-processing recommended title)
-    let movieTitle = recommendationJSON.pelicula;
-    // Remove year in parenthesis if present for better search results, but keep it as a backup
-    const cleanTitle = movieTitle.replace(/\(\d{4}\)/g, '').trim();
-    
-    let posterUrl = null;
-    let overview = "";
-
+    let recJSON;
     try {
-      if (movieTitle && process.env.TMDB_API_KEY) {
+      recJSON = JSON.parse(recommendationText);
+    } catch (e) {
+      return res.status(500).json({ error: 'Error parseando respuesta de IA' });
+    }
+
+    // 4. Enrich Results (Metadata fetch)
+    const finalResult = { ...recJSON, poster_url: null, song_metadata: null };
+
+    // Enrichment: Movie
+    if (recJSON.pelicula) {
+      try {
+        const movieClean = recJSON.pelicula.replace(/\(\d{4}\)/g, '').trim();
         const tmdbRes = await axios.get(`https://api.themoviedb.org/3/search/movie`, {
-          params: {
-            api_key: process.env.TMDB_API_KEY,
-            query: cleanTitle,
-            language: 'es-ES',
-            page: 1
-          }
+          params: { api_key: process.env.TMDB_API_KEY, query: movieClean, language: 'es-ES', page: 1 }
         });
+        const mData = tmdbRes.data.results?.[0];
+        if (mData) {
+          finalResult.poster_url = `https://image.tmdb.org/t/p/w780${mData.poster_path}`;
+          finalResult.sinopsis = mData.overview;
+        }
+      } catch (e) { console.warn("TMDB Enrichment failed"); }
+    }
 
-        if (tmdbRes.data.results && tmdbRes.data.results.length > 0) {
-          const movieData = tmdbRes.data.results[0];
-          overview = movieData.overview;
-          if (movieData.poster_path) {
-            posterUrl = `https://image.tmdb.org/t/p/w780${movieData.poster_path}`;
+    // Enrichment: Song
+    if (recJSON.cancion && (mode === 'song_from_movies' || mode === 'hybrid')) {
+      try {
+        if (req.spotifyToken) {
+          const query = `${recJSON.cancion} ${recJSON.artista || ''}`.trim();
+          const spotRes = await axios.get(`https://api.spotify.com/v1/search`, {
+            params: { q: query, type: 'track', limit: 1 },
+            headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+          });
+          const track = spotRes.data.tracks?.items?.[0];
+          if (track) {
+            finalResult.song_metadata = {
+              name: track.name,
+              artist: track.artists[0].name,
+              artwork: track.album.images[0]?.url,
+              url: track.external_urls.spotify,
+              preview: track.preview_url
+            };
           }
         }
-      }
-    } catch (tmdbError) {
-      console.error("TMDB Error (non-fatal):", tmdbError.message);
+      } catch (e) { console.warn("Spotify Enrichment failed"); }
     }
 
-    res.json({
-        ...recommendationJSON,
-        poster_url: posterUrl,
-        sinopsis: overview
-    });
+    res.json(finalResult);
 
   } catch (error) {
-    console.error('Recommendation API Error:', error);
-    res.status(500).json({ error: 'Failed to generate recommendation', details: error.message });
+    console.error('Recommendation Controller Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
@@ -296,10 +349,6 @@ export const generateFromList = async (req, res) => {
       return res.status(400).json({ error: 'La lista no tiene elementos para analizar.' });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    //usar gemini 2.5 flash siempre (no cambiar)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const movies = items.filter(i => i.type === 'movie').map(m => `${m.title} ${m.subtitle ? '('+m.subtitle+')' : ''}`);
     const songs = items.filter(i => i.type === 'song' || i.type === 'album').map(s => `${s.title} por ${s.subtitle}`);
 
@@ -318,14 +367,14 @@ REGLA CRÍTICA: Debes devolver un JSON válido estrictamente en este formato:
   "motivo": "Explicación de por qué son las adiciones perfectas para esta lista específica."
 }`;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\n${context}` }] }],
-      generationConfig: { temperature: 0.8, responseMimeType: "application/json" }
-    });
+    let text;
+    try {
+      text = await geminiGenerate(`${systemInstruction}\n\n${context}`, { temperature: 0.8 });
+    } catch (geminiErr) {
+      console.error('All Gemini models failed (list):', geminiErr.message);
+      return res.status(503).json({ error: 'El servicio de IA está temporalmente saturado. Inténtalo de nuevo en unos segundos.' });
+    }
 
-    const response = await result.response;
-    let text = response.text().replace(/```json|```/gi, '').trim();
-    
     let jsonResponse;
     try {
       jsonResponse = JSON.parse(text);

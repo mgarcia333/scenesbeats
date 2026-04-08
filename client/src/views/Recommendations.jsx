@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import { Music, Film, Sparkles, AlertCircle } from 'lucide-react';
-import LoadingScreen from '../components/LoadingScreen';
+import { Music, Film, Sparkles, AlertCircle, Loader2, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { recommendationApi, favoritesApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const Recommendations = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loadingRec, setLoadingRec] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
-  const [mode, setMode] = useState('spotify'); // 'spotify', 'letterboxd', 'hybrid'
+  const [mode, setMode] = useState('movie_from_music');
 
   const getRecommendation = async () => {
     setLoadingRec(true);
     setErrorMsg("");
     setRecommendation(null);
 
-    // 1. Fetch User Data to get Laravel ID if possible
-    // (In a real app, this would be in a global context/store)
-    let lb_username = localStorage.getItem('lb_username');
+    let lb_username = user?.letterboxd_username;
     let fav_movies = [];
     let fav_songs = [];
 
@@ -30,120 +29,190 @@ const Recommendations = () => {
         fav_songs = allFavs.filter(f => f.type === 'song');
       }
     } catch (e) {
-      console.warn("Could not fetch persistent favorites, falling back to local storage if available.");
-      fav_movies = JSON.parse(localStorage.getItem('fav_movies') || '[]');
-      fav_songs = JSON.parse(localStorage.getItem('fav_songs') || '[]');
+      console.warn("Favs fetch failed");
     }
 
-    if (mode === 'letterboxd' && !lb_username) {
-      setErrorMsg("Necesitas conectar tu Letterboxd en el Perfil para usar este modo.");
+    if ((mode === 'movie_from_movies' || mode === 'song_from_movies' || mode === 'hybrid') && !lb_username) {
+      setErrorMsg(t('rec.errorLB'));
       setLoadingRec(false);
       return;
     }
 
     try {
       const res = await recommendationApi.generate({
-          mode,
-          lb_username,
-          fav_movies: fav_movies.map(m => ({ title: m.title })), // Simplify for Gemini
-          fav_songs: fav_songs.map(s => ({ title: s.title }))
+        mode,
+        lb_username,
+        fav_movies: fav_movies.map(m => ({ title: m.title })),
+        fav_songs: fav_songs.map(s => ({ title: s.name || s.title }))
       });
-      
       setRecommendation(res.data);
     } catch (err) {
-      console.error(err);
-      if (err.response?.status === 401) {
-        setErrorMsg("Tu sesión de Spotify ha expirado. Por favor, ve al Inicio e inicia sesión de nuevo.");
+      console.error("Recommendation Error:", err);
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.error;
+      if (status === 503) {
+        setErrorMsg(serverMsg || 'La IA está saturada ahora mismo. Espera unos segundos e inténtalo de nuevo.');
+      } else if (status === 401) {
+        setErrorMsg(t('rec.errorSpotify'));
       } else {
-        setErrorMsg(err.response?.data?.error || "Error al obtener recomendación.");
+        setErrorMsg(serverMsg || t('rec.errorGeneral'));
       }
     } finally {
       setLoadingRec(false);
     }
   };
 
-  const modes = [
-    { id: 'spotify', name: 'Vibra Actual', icon: <Music size={18} />, desc: 'Basado en tus últimas canciones' },
-    { id: 'letterboxd', name: 'Cinefilia', icon: <Film size={18} />, desc: 'Basado en tu Letterboxd' },
-    { id: 'hybrid', name: 'Mix Personalizado', icon: <Sparkles size={18} />, desc: 'Música + Cine + Favoritos' }
-  ];
-
   return (
     <div className="view-container">
-      <h2 className="section-title">Recomendaciones</h2>
-      
-      <div className="mode-selector-container glass" style={{ marginBottom: '2rem', padding: '0.5rem', borderRadius: '16px', display: 'flex', gap: '0.5rem' }}>
-        {modes.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => setMode(m.id)}
-            className={`mode-btn ${mode === m.id ? 'active' : ''}`}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.8rem 0.4rem',
-              borderRadius: '12px',
-              border: 'none',
-              background: mode === m.id ? 'var(--primary-color)' : 'transparent',
-              color: mode === m.id ? 'white' : 'var(--text-secondary)',
-              transition: 'all 0.3s ease',
-              cursor: 'pointer'
-            }}
-          >
-            {m.icon}
-            <span style={{ fontSize: '0.75rem', fontWeight: '700' }}>{m.name}</span>
-          </button>
-        ))}
+      {/* Header Section */}
+      <div className="rec-header">
+        <h2 className="section-title">{t('rec.title')}</h2>
+        <p className="rec-subtitle">Deja que la IA analice tu vibra musical y cinéfila para descubrir tu próxima obsesión.</p>
       </div>
 
-      {loadingRec ? (
-        <div style={{ padding: '4rem 0' }}>
-          <LoadingScreen message="Invocando a la IA cineasta..." />
+      {/* Mode Selection Cards */}
+      <div className="rec-modes-grid animate-fadeIn">
+        <div 
+          className={`rec-mode-card ${mode === 'movie_from_music' ? 'active' : ''}`}
+          onClick={() => setMode('movie_from_music')}
+        >
+          <div className="mode-card-icon"><Film size={24} /></div>
+          <div className="mode-card-info">
+            <h4>{t('rec.modeMovieFromMusic')}</h4>
+            <p>Tu cine ideal basado en lo que escuchas hoy.</p>
+          </div>
         </div>
-      ) : (
-        <div className="recommendation-hero glass" style={{ borderRadius: '24px', border: '1px solid rgba(255,255,255,0.15)', padding: '3rem 2rem', boxShadow: '0 12px 40px rgba(0,0,0,0.5)', background: 'linear-gradient(135deg, rgba(0,122,255,0.1), transparent)', textAlign: 'center' }}>
-          <p className="hero-text" style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: '500', marginBottom: '1.5rem' }}>
-            {modes.find(m => m.id === mode).desc}
-          </p>
-          <button 
-            onClick={getRecommendation} 
-            className="btn-glossy"
-            disabled={loadingRec}
-            style={{ padding: '1rem 3rem', fontSize: '1.1rem', borderRadius: '500px' }}
-          >
-            {recommendation ? "Probar de nuevo" : "Obtener Recomendación"}
+
+        <div 
+          className={`rec-mode-card ${mode === 'song_from_movies' ? 'active' : ''}`}
+          onClick={() => setMode('song_from_movies')}
+        >
+          <div className="mode-card-icon"><Music size={24} /></div>
+          <div className="mode-card-info">
+            <h4>{t('rec.modeSongFromMovies')}</h4>
+            <p>La banda sonora de tus películas favoritas.</p>
+          </div>
+        </div>
+
+        <div 
+          className={`rec-mode-card ${mode === 'hybrid' ? 'active' : ''}`}
+          onClick={() => setMode('hybrid')}
+        >
+          <div className="mode-card-icon"><Sparkles size={24} /></div>
+          <div className="mode-card-info">
+            <h4>{t('rec.modeHybridFull')}</h4>
+            <p>Experiencia total: una película y una canción conectadas.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Area */}
+      {!recommendation && !loadingRec && (
+        <div className="rec-action-hero">
+          <div className="rec-hero-icon">
+            <Sparkles size={48} className="glow-icon" />
+          </div>
+          <button onClick={getRecommendation} className="rec-main-button">
+            {t('rec.getBtn')}
           </button>
         </div>
       )}
 
-      {errorMsg && (
-        <div className="error-card glass" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', marginTop: '1.5rem', borderLeft: '4px solid #ff4b4b', borderRadius: '12px' }}>
-          <AlertCircle size={20} color="#ff4b4b" />
-          <p style={{ color: '#ff4b4b', fontSize: '0.9rem' }}>{errorMsg}</p>
+      {/* Loading State */}
+      {loadingRec && (
+        <div className="rec-loading-container animate-fadeIn">
+          <div className="rec-loader-box">
+            <Loader2 size={40} className="spin text-primary" />
+            <p className="rec-loader-text">{t('home.loading')}</p>
+          </div>
         </div>
       )}
 
-      {recommendation && (
-        <div className="recommendation-result glass" style={{ borderRadius: '24px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', marginTop: '2.5rem', overflow: 'hidden' }}>
-          <div className="result-header" style={{ padding: '1.5rem 1.5rem 0 1.5rem' }}>
-             <span className="vibra-badge" style={{ background: 'var(--primary-color)', boxShadow: '0 4px 12px rgba(0,122,255,0.4)', color: 'white', padding: '0.4rem 1rem', borderRadius: '100px', fontSize: '0.8rem', fontWeight: '700' }}>VIBRA: {recommendation.vibra}</span>
+      {/* Error State */}
+      {errorMsg && (
+        <div className="error-banner glass animate-shake">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1 }}>
+            <AlertCircle size={20} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>{errorMsg}</span>
           </div>
-          <div className="result-content" style={{ padding: '1.5rem', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-            {recommendation.poster_url && (
-              <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', flexShrink: 0, width: '200px' }}>
-                <img src={recommendation.poster_url} alt={recommendation.pelicula} className="result-poster" style={{ width: '100%', height: 'auto', display: 'block' }} />
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 40%)', pointerEvents: 'none' }}></div>
+          <button
+            onClick={getRecommendation}
+            disabled={loadingRec}
+            style={{ marginLeft: 'auto', flexShrink: 0, background: 'rgba(29,185,84,0.15)', border: '1px solid rgba(29,185,84,0.3)', color: 'var(--primary-color)', borderRadius: '500px', padding: '0.4rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+          >
+            {loadingRec ? <Loader2 size={14} className="spin" /> : 'Reintentar'}
+          </button>
+        </div>
+      )}
+
+      {/* Result Section */}
+      {recommendation && (
+        <div className="rec-result-view animate-fadeIn">
+          <div className="rec-result-card glass overflow-hidden">
+            {/* Background blur decoration */}
+            <div className="rec-background-poster">
+              {recommendation.poster_url && <img src={recommendation.poster_url} alt="" />}
+              {recommendation.song_metadata?.artwork && <img src={recommendation.song_metadata.artwork} alt="" />}
+            </div>
+
+            <div className="rec-card-content">
+              {/* Analysis Header */}
+              <div className="vibe-badge">
+                <Sparkles size={14} />
+                <span>Análisis de IA: {recommendation.vibra}</span>
               </div>
-            )}
-            <div className="result-info" style={{ flex: '1', minWidth: '280px' }}>
-              <h3 className="result-title" style={{ fontSize: '2.4rem', textShadow: '0 2px 4px rgba(0,0,0,0.3)', marginBottom: '1rem', lineHeight: '1.1' }}>{recommendation.pelicula}</h3>
-              <p className="result-synopsis" style={{ opacity: 0.9, lineHeight: '1.6', fontSize: '1rem', marginBottom: '1.5rem' }}>{recommendation.sinopsis}</p>
-              <div className="result-reason" style={{ background: 'rgba(255,255,255,0.04)', borderLeft: '4px solid var(--primary-color)', borderRadius: '12px', padding: '1.25rem' }}>
-                <h4 style={{ color: 'var(--primary-color)', fontSize: '0.75rem', letterSpacing: '0.15em', marginBottom: '0.6rem', fontWeight: '800', textTransform: 'uppercase' }}>¿Por qué?</h4>
-                <p style={{ fontStyle: 'italic', fontSize: '0.95rem', lineHeight: '1.5' }}>{recommendation.motivo}</p>
+
+              <div className="rec-output-container">
+                {/* Movie Recommendation */}
+                {recommendation.pelicula && (
+                  <div className="rec-item-display">
+                     <div className="rec-item-media">
+                        {recommendation.poster_url ? (
+                          <img src={recommendation.poster_url} alt={recommendation.pelicula} className="rec-visual-main shadow-xl" />
+                        ) : (
+                          <div className="rec-visual-placeholder"><Film size={48} /></div>
+                        )}
+                     </div>
+                     <div className="rec-item-info">
+                        <span className="rec-tag">PELÍCULA RECOMENDADA</span>
+                        <h3 className="rec-title-big">{recommendation.pelicula}</h3>
+                        <p className="rec-synopsis">{recommendation.sinopsis}</p>
+                     </div>
+                  </div>
+                )}
+
+                {/* Song Recommendation */}
+                {recommendation.song_metadata && (
+                  <div className={`rec-item-display ${recommendation.pelicula ? 'with-divider' : ''}`}>
+                     <div className="rec-item-media music-media">
+                        <img src={recommendation.song_metadata.artwork} alt={recommendation.song_metadata.name} className="rec-visual-song shadow-xl" />
+                     </div>
+                     <div className="rec-item-info">
+                        <span className="rec-tag">CANCIÓN RECOMENDADA</span>
+                        <h3 className="rec-title-big">{recommendation.song_metadata.name}</h3>
+                        <p className="rec-subtitle-big">{recommendation.song_metadata.artist}</p>
+                        <a href={recommendation.song_metadata.url} target="_blank" rel="noopener noreferrer" className="spotify-play-btn">
+                          <Music size={16} /> Escuchar en Spotify
+                        </a>
+                     </div>
+                  </div>
+                )}
+
+                {/* Unified Reason */}
+                <div className="rec-reason-box">
+                  <h4 className="rec-reason-title">
+                    <Sparkles size={14} />
+                    ¿POR QUÉ ESTA ELECCIÓN?
+                  </h4>
+                  <p className="rec-reason-text">{recommendation.motivo}</p>
+                </div>
+
+                <div className="rec-footer-actions">
+                  <button onClick={getRecommendation} className="rec-retry-button">
+                    <RotateCcw size={16} />
+                    Nueva recomendación
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -155,4 +224,3 @@ const Recommendations = () => {
 };
 
 export default Recommendations;
-

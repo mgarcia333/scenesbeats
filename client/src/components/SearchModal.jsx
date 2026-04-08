@@ -1,99 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Film, Music, Disc } from 'lucide-react';
+import { X, Search, Loader } from 'lucide-react';
+import { movieApi, nodeApi } from '../api';
+import { useTranslation } from 'react-i18next';
 
-const SearchModal = ({ isOpen, onClose, onSelect, type, title }) => {
+const SearchModal = ({ isOpen, onClose, onSelect, type }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!isOpen) { setQuery(''); setResults([]); }
+  }, [isOpen]);
 
-    const handler = setTimeout(async () => {
-      setLoading(true);
-      try {
-        let endpoint = '';
-        if (type === 'movie') {
-          endpoint = `/api/movie/search?query=${query}`;
-        } else if (type === 'song') {
-          endpoint = `/api/spotify/search?query=${query}&type=track`;
-        } else if (type === 'album') {
-          endpoint = `/api/spotify/search?query=${query}&type=album`;
-        }
-
-        const res = await fetch(endpoint, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          if (type === 'movie') {
-            setResults(data);
-          } else if (type === 'song') {
-            setResults(data.tracks.items.map(t => ({
-              id: t.id,
-              name: t.name,
-              artist: t.artists[0].name,
-              artwork: t.album.images[0]?.url
-            })));
-          } else if (type === 'album') {
-            setResults(data.albums.items.map(a => ({
-              id: a.id,
-              name: a.name,
-              artist: a.artists[0].name,
-              artwork: a.images[0]?.url
-            })));
-          }
-        }
-      } catch (err) {
-        console.error("Search error:", err);
-      } finally {
-        setLoading(false);
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    setLoading(true);
+    try {
+      if (type === 'movie') {
+        const res = await movieApi.search(query);
+        setResults(res.data);
+      } else {
+        const res = await nodeApi.get(`/spotify/search?query=${query}&type=${type}`);
+        const items = type === 'song' ? res.data.tracks.items : res.data.albums.items;
+        setResults(items.map(i => ({
+          id: i.id, title: i.name, artwork: type === 'song' ? i.album.images[0]?.url : i.images[0]?.url,
+          artist: i.artists[0].name
+        })));
       }
-    }, 500);
-
-    return () => clearTimeout(handler);
-  }, [query, type]);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h3>{title}</h3>
-          <button onClick={onClose} className="close-btn"><X size={20} /></button>
+    <div className="modal-overlay" style={{ zIndex: 1100, backdropFilter: 'blur(10px)' }}>
+      <div className="modal-content glass" style={{ maxWidth: '600px', width: '90%', borderRadius: '20px', padding: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em', opacity: 0.6 }}>{t('search.movies')} / {t('search.music')}</h3>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white' }}><X size={24} /></button>
         </div>
         
-        <div className="modal-search-bar">
-          <Search size={18} className="search-icon" />
+        <div className="search-bar-container" style={{ marginBottom: '1.5rem' }}>
+          <Search size={20} className="search-icon" />
           <input 
-            autoFocus
-            type="text" 
-            placeholder={`Buscar ${title.toLowerCase()}...`}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            autoFocus className="search-input" placeholder={t('search.placeholder')} 
+            value={query} onChange={(e) => setQuery(e.target.value)} 
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
+          <button onClick={handleSearch} className="rec-button" style={{ padding: '0.5rem 1rem', width: 'auto' }}>Go</button>
         </div>
 
-        <div className="modal-results">
-          {loading ? (
-            <div className="modal-loading">Buscando...</div>
-          ) : results.length > 0 ? (
-            results.map((item, idx) => (
-              <div key={item.id || idx} className="result-item" onClick={() => onSelect(item)}>
-                <img src={item.poster || item.artwork || "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=100&h=150&fit=crop"} alt={item.name || item.title} />
-                <div className="result-info">
-                  <div className="result-name">{item.name || item.title}</div>
-                  <div className="result-meta">{item.artist || item.year}</div>
-                </div>
+        <div className="search-results-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          {loading ? <div style={{ textAlign: 'center', padding: '2rem' }}><Loader className="spin" /></div> : results.map((item, idx) => (
+            <div key={idx} onClick={() => onSelect(item)} className="search-result-item" style={{ display: 'flex', gap: '1rem', padding: '0.75rem', cursor: 'pointer', borderRadius: '10px' }}>
+              <img src={item.poster || item.artwork} alt="" style={{ width: '40px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+              <div>
+                <div style={{ fontWeight: 'bold' }}>{item.title || item.name}</div>
+                <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>{item.year || item.artist}</div>
               </div>
-            ))
-          ) : query && !loading ? (
-            <div className="no-results">No se encontraron resultados.</div>
-          ) : (
-            <div className="modal-tip">Escribe algo para buscar...</div>
-          )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

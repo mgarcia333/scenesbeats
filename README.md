@@ -1,6 +1,6 @@
-# Scenes & Beats
+# ScenesBeats
 
-Scenes & Beats is a web application that recommends movies based on your current musical mood on Spotify, powered by Google Gemini AI.
+ScenesBeats is a web application that recommends movies based on your current musical mood on Spotify, powered by Google Gemini AI.
 
 ## Key Features
 

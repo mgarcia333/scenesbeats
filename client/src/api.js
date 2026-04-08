@@ -6,6 +6,23 @@ export const nodeApi = axios.create({
   withCredentials: true,
 });
 
+// Interceptor for 401 errors
+nodeApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Only clear if it's a call that SHOULD have been authenticated
+      // or if it's the 'me' call itself
+      const isAuthMe = error.config.url.includes('/auth/me');
+      if (isAuthMe) {
+        console.warn("Session expired (401), clearing local storage.");
+        localStorage.removeItem('user');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Laravel API client (SQL DB, CRUDs)
 export const laravelApi = axios.create({
   baseURL: import.meta.env.VITE_LARAVEL_API_URL || 'http://localhost:8000/api',
@@ -34,7 +51,8 @@ export const authApi = {
   register: (data) => laravelApi.post('/auth/register', data),
   login: (data) => laravelApi.post('/auth/login', data),
   syncGoogle: (data) => laravelApi.post('/auth/sync-google', data),
-  syncLetterboxd: (username, email) => laravelApi.post('/auth/sync-letterboxd', { username, email }),
+  syncLetterboxd: (username, userId) => laravelApi.post('/auth/sync-letterboxd', { username, user_id: userId }),
+  getSpotifyStatus: () => nodeApi.get('/auth/spotify/status'),
 };
 
 export const recommendationApi = {
@@ -48,3 +66,8 @@ export const movieApi = {
   search: (query) => nodeApi.get(`/movie/search?query=${query}`),
   getLetterboxd: (username) => nodeApi.get(`/movie/letterboxd/${username}`),
 };
+
+export const spotifyApi = {
+  createPlaylist: (data) => nodeApi.post('/spotify/playlist', data),
+};
+

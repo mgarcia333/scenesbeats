@@ -1,4 +1,4 @@
-export const getSpotifyAuthUrl = () => {
+export const getSpotifyAuthUrl = (state = 'login') => {
   const scopes = [
     'user-read-private',
     'user-read-email',
@@ -11,6 +11,7 @@ export const getSpotifyAuthUrl = () => {
     client_id: process.env.SPOTIFY_CLIENT_ID,
     scope: scopes,
     redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
+    state,
   });
 
   return `https://accounts.spotify.com/authorize?${params.toString()}`;

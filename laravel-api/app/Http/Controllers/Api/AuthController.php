@@ -151,16 +151,16 @@ class AuthController extends Controller
     {
         $request->validate([
             'username' => 'required|string|max:255',
-            'email' => 'required|email',
+            'user_id'  => 'required|integer',
         ]);
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        $user = User::findOrFail($request->user_id);
         $user->letterboxd_username = $request->username;
         $user->save();
 
         return response()->json([
             'status' => 'success',
-            'user' => $user
+            'user'   => $user
         ]);
     }
 }
