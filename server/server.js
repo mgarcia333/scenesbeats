@@ -27,6 +27,7 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 5000;
+const userSockets = new Map(); // userId -> set of socket IDs
 
 app.use(
   cors({
@@ -54,12 +55,49 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "ScenesBeats API" });
 });
 
+// Internal endpoint for Laravel to trigger socket broadcasts
+app.post("/api/internal/broadcast", (req, res) => {
+  const { event, data } = req.body;
+  if (!event || !data) {
+    return res.status(400).json({ error: "Event and data required" });
+  }
+
+  console.log(`📣 Internal broadcast: ${event}`);
+
+  // If data has a recipient_id, only send to that user
+  if (data.recipient_id) {
+    const socketIds = userSockets.get(String(data.recipient_id));
+    if (socketIds) {
+      socketIds.forEach(sid => io.to(sid).emit(event, data));
+      console.log(`   Directed to user: ${data.recipient_id} (${socketIds.size} sockets)`);
+    }
+  } else {
+    // Otherwise broadcast to all
+    io.emit(event, data);
+  }
+  
+  res.json({ success: true });
+});
+
 import SpotifyMonitor from "./utils/spotifyMonitor.js";
-import cookie from "cookie"; // You might need to install this if missing
+import { saveChatMessage } from "./utils/laravel.js";
+import cookie from "cookie";
 
 io.on("connection", (socket) => {
   console.log("Client connected via Socket.IO:", socket.id);
   
+  // Register user mapping
+  socket.on("register_user", (userId) => {
+    if (!userId) return;
+    const uid = String(userId);
+    if (!userSockets.has(uid)) {
+      userSockets.set(uid, new Set());
+    }
+    userSockets.get(uid).add(socket.id);
+    socket.userId = uid;
+    console.log(`User ${uid} registered with socket ${socket.id}`);
+  });
+
   // Extract Spotify token from cookies
   const cookiesStr = socket.handshake.headers.cookie || "";
   const cookies = cookie.parse(cookiesStr);
@@ -72,8 +110,54 @@ io.on("connection", (socket) => {
     monitor.start(10000); // Poll every 10 secs
   }
 
+  // --- Chat Logic ---
+  socket.on("join_room", (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room: ${roomId}`);
+  });
+
+  socket.on("leave_room", (roomId) => {
+    socket.leave(roomId);
+    console.log(`Socket ${socket.id} left room: ${roomId}`);
+  });
+
+  socket.on("send_msg", async (data) => {
+    const { roomId, userId, content, type, gifUrl, itemId, itemType, itemTitle, itemImage, itemSubtitle } = data;
+    
+    // 1. Broadcast to the room
+    socket.to(roomId).emit("new_msg", data);
+
+    // 2. Persist to Laravel
+    try {
+      await saveChatMessage(roomId, {
+        user_id: userId,
+        content,
+        type: type || 'text',
+        gif_url: gifUrl,
+        item_id: itemId,
+        item_type: itemType,
+        item_title: itemTitle,
+        item_image: itemImage,
+        item_subtitle: itemSubtitle
+      });
+    } catch (err) {
+      console.error("Failed to persist message:", err.message);
+    }
+  });
+
+  socket.on("typing", (data) => {
+    // data: { roomId, userName, isTyping }
+    socket.to(data.roomId).emit("typing_status", data);
+  });
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
+    if (socket.userId && userSockets.has(socket.userId)) {
+      userSockets.get(socket.userId).delete(socket.id);
+      if (userSockets.get(socket.userId).size === 0) {
+        userSockets.delete(socket.userId);
+      }
+    }
     if (monitor) monitor.stop();
   });
 });

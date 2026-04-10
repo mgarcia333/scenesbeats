@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Music, Film, Sparkles, AlertCircle, Loader2, RotateCcw } from 'lucide-react';
+import { Music, Film, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { recommendationApi, favoritesApi } from '../api';
 import { useAuth } from '../context/AuthContext';
+import LoadingDots from '../components/LoadingDots';
 
 const Recommendations = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [loadingRec, setLoadingRec] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
@@ -43,7 +44,9 @@ const Recommendations = () => {
         mode,
         lb_username,
         fav_movies: fav_movies.map(m => ({ title: m.title })),
-        fav_songs: fav_songs.map(s => ({ title: s.name || s.title }))
+        fav_songs: fav_songs.map(s => ({ title: s.name || s.title })),
+        lang: i18n.language,
+        userId: user?.id
       });
       setRecommendation(res.data);
     } catch (err) {
@@ -122,7 +125,7 @@ const Recommendations = () => {
       {loadingRec && (
         <div className="rec-loading-container animate-fadeIn">
           <div className="rec-loader-box">
-            <Loader2 size={40} className="spin text-primary" />
+            <LoadingDots />
             <p className="rec-loader-text">{t('home.loading')}</p>
           </div>
         </div>
@@ -140,7 +143,7 @@ const Recommendations = () => {
             disabled={loadingRec}
             className="error-retry-btn"
           >
-            {loadingRec ? <Loader2 size={14} className="spin" /> : 'Reintentar'}
+            {loadingRec ? <LoadingDots className="mini-loader" /> : 'Reintentar'}
           </button>
         </div>
       )}

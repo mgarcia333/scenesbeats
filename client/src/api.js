@@ -39,6 +39,8 @@ export const listsApi = {
   delete: (id) => laravelApi.delete(`/lists/${id}`),
   addItem: (listId, data) => laravelApi.post(`/lists/${listId}/items`, data),
   removeItem: (listId, itemId) => laravelApi.delete(`/lists/${listId}/items/${itemId}`),
+  addCollaborator: (listId, userId) => laravelApi.post(`/lists/${listId}/collaborators`, { user_id: userId }),
+  removeCollaborator: (listId, userId) => laravelApi.delete(`/lists/${listId}/collaborators`, { data: { user_id: userId } }),
 };
 
 export const authApi = {
@@ -63,11 +65,18 @@ export const socialApi = {
   createActivity: (data) => laravelApi.post('/activities', data),
 };
 
+export const chatApi = {
+  getMessages: (roomId) => laravelApi.get(`/chat/${roomId}`),
+  saveMessage: (roomId, data) => laravelApi.post(`/chat/${roomId}`, data),
+};
+
 export const recommendationApi = {
   generate: (data) => nodeApi.post('/recommendation/generate', data),
   generateFromList: (data) => nodeApi.post('/recommendation/generate-from-list', data),
+  completeList: (data) => nodeApi.post('/recommendation/complete-list', data),
   getTrending: () => nodeApi.get('/recommendation/trending'),
   getInitialData: () => nodeApi.get('/recommendation/initial-data'),
+  getHistory: (userId) => laravelApi.get(`/recommendations/history?user_id=${userId}`),
 };
 
 export const movieApi = {

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { movieApi, spotifyApi } from '../api';
-import { ArrowLeft, Clock, Calendar, Plus, ExternalLink, Loader2, Music, Film, Info } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Plus, ExternalLink, Music, Film, Info } from 'lucide-react';
+import LoadingDots from '../components/LoadingDots';
 import AddToListModal from '../components/AddToListModal';
 
 const ItemDetail = ({ type }) => {
@@ -40,7 +41,7 @@ const ItemDetail = ({ type }) => {
   if (loading) {
     return (
       <div className="view-container flex-center">
-        <Loader2 className="spin" size={40} color="var(--primary-color)" />
+        <LoadingDots />
       </div>
     );
   }

@@ -8,6 +8,7 @@ import HorizontalScroll from '../components/HorizontalScroll';
 import { MovieCard, SongCard } from '../components/Cards';
 import { useAuth } from '../context/AuthContext';
 import { recommendationApi, spotifyApi, movieApi } from '../api';
+import LoadingDots from '../components/LoadingDots';
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -58,9 +59,9 @@ const Home = () => {
       try {
         const fetches = [];
 
-        // Trending movies (public)
+        // Personalized Recommendation History
         fetches.push(
-          recommendationApi.getTrending()
+          recommendationApi.getHistory(user.id)
             .then(res => setRecentMovies(res.data))
             .catch(() => {})
         );
@@ -132,7 +133,7 @@ const Home = () => {
   if (loading) {
     return (
       <div className="loading-screen">
-        <div className="loading-pulse" />
+        <LoadingDots />
       </div>
     );
   }
@@ -221,13 +222,27 @@ const Home = () => {
         </section>
       )}
 
-      {/* Trending section (public) */}
+      {/* Latest Recommendations (History) */}
       {recentMovies.length > 0 && (
         <section className="feed-section" style={{ marginTop: '2.5rem' }}>
-          <h2 className="section-title">{t('home.trendingMovies')}</h2>
+          <h2 className="section-title">{t('home.latestRecommendations')}</h2>
           <HorizontalScroll>
-            {recentMovies.map(movie => (
-              <MovieCard key={movie.id} movie={movie} />
+            {recentMovies.map((item, idx) => (
+              item.type === 'song' ? (
+                <SongCard key={`${item.id || idx}-${idx}`} song={{
+                  id: item.external_id,
+                  name: item.title,
+                  artist: item.subtitle,
+                  artwork: item.image_url
+                }} />
+              ) : (
+                <MovieCard key={`${item.id || idx}-${idx}`} movie={{
+                  id: item.external_id,
+                  title: item.title,
+                  year: item.subtitle,
+                  poster: item.image_url
+                }} />
+              )
             ))}
           </HorizontalScroll>
         </section>

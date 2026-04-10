@@ -25,6 +25,8 @@ Route::put('/lists/{id}', [MediaListController::class, 'update']);
 Route::delete('/lists/{id}', [MediaListController::class, 'destroy']);
 Route::post('/lists/{id}/items', [MediaListController::class, 'addItem']);
 Route::delete('/lists/{id}/items/{itemId}', [MediaListController::class, 'removeItem']);
+Route::post('/lists/{id}/collaborators', [MediaListController::class, 'addCollaborator']);
+Route::delete('/lists/{id}/collaborators', [MediaListController::class, 'removeCollaborator']);
 
 // Social & Friends
 use App\Http\Controllers\Api\FriendshipController;
@@ -37,6 +39,16 @@ Route::delete('/friendships/{id}', [FriendshipController::class, 'destroy']);
 // Community Activity
 use App\Http\Controllers\Api\ActivityController;
 Route::get('/activities', [ActivityController::class, 'index']);
+
+// Chat System
+use App\Http\Controllers\Api\ChatController;
+Route::get('/chat/{room_id}', [ChatController::class, 'index']);
+Route::post('/chat/{room_id}', [ChatController::class, 'store']);
+
+// Recommendation History
+use App\Http\Controllers\Api\RecommendationHistoryController;
+Route::get('/recommendations/history', [RecommendationHistoryController::class, 'index']);
+Route::post('/recommendations/history', [RecommendationHistoryController::class, 'storeBatch']);
 
 // User Search
 Route::get('/users/search', function (Request $request) {

@@ -1,5 +1,11 @@
 import express from 'express';
-import { generateRecommendation, getTrendingMovies, getInitialCommunityData, generateFromList } from '../controllers/recommendationController.js';
+import { 
+  generateRecommendation, 
+  getTrendingMovies, 
+  getInitialCommunityData, 
+  generateFromList,
+  completePlaylist
+} from '../controllers/recommendationController.js';
 import { requireSpotifyToken, injectSpotifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -31,5 +37,12 @@ router.get('/initial-data', injectSpotifyToken, getInitialCommunityData);
  * @access  Public
  */
 router.post('/generate-from-list', generateFromList);
+
+/**
+ * @route   POST /api/recommendation/complete-list
+ * @desc    Generate multiple recommendations to complete a list
+ * @access  Public
+ */
+router.post('/complete-list', injectSpotifyToken, completePlaylist);
 
 export default router;

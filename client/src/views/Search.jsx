@@ -6,8 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { socket } from '../App';
 import { 
   Search as SearchIcon, Clapperboard, Music, 
-  Users, UserPlus, Star, Info, User, Check, Loader2
+  Users, UserPlus, Star, Info, User, Check
 } from 'lucide-react';
+import LoadingDots from '../components/LoadingDots';
 
 const PersonCard = ({ person }) => (
   <div className="person-card animate-fadeIn">
@@ -185,7 +186,7 @@ const Search = () => {
       <div className="search-results">
         {loading ? (
           <div className="search-loading">
-            <div className="loader spin"></div>
+            <LoadingDots />
             <span>Buscando en la galaxia...</span>
           </div>
         ) : results.length > 0 ? (

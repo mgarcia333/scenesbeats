@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { listsApi } from '../api';
 import {
-  Plus, ListMusic, Film, Music, Loader2,
+  Plus, ListMusic, Film, Music,
   ChevronRight, Trash2, X, Check
 } from 'lucide-react';
+import LoadingDots from '../components/LoadingDots';
 
 /* ── Create-list inline form ─────────────────── */
 const CreateListModal = ({ onClose, onCreate }) => {
@@ -54,7 +55,7 @@ const CreateListModal = ({ onClose, onCreate }) => {
               {t('profile.cancel')}
             </button>
             <button type="submit" className="modal-btn-save" disabled={loading || !name.trim()}>
-              {loading ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+              {loading ? <LoadingDots className="mini-loader" /> : <Check size={16} />}
               {loading ? '...' : t('lists.create')}
             </button>
           </div>
@@ -117,7 +118,7 @@ const ListCard = ({ list, onDelete, onClick }) => {
           disabled={deleting}
           title="Eliminar lista"
         >
-          {deleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
+          {deleting ? <LoadingDots className="mini-loader" /> : <Trash2 size={14} />}
         </button>
       </div>
 

@@ -19,7 +19,7 @@
     "reacted": "reacted to",
     "watched": "watched",
     "timeAgo": "{{count}}{{unit}} ago",
-    "trendingMovies": "Trending movies",
+    "latestRecommendations": "Latest recommendations",
     "connectCTA": "Connect Spotify or Letterboxd from your profile to see your activity here.",
     "goToProfile": "Go to profile",
     "or": "or"
@@ -140,8 +140,13 @@
     "why": "Why?",
     "vibe": "VIBE"
   },
-  "comm": {
+  "community": {
     "title": "Community",
+    "activities": "Recent activity",
+    "requests": "Pending requests",
+    "suggestions": "Suggestions",
+    "suggestionsDesc": "Suggestions based on your tastes.",
+    "noActivity": "No recent activity.",
     "searchPlaceholderMovies": "Search for a movie you're in the mood for...",
     "searchPlaceholderMusic": "Search for that beat in your head...",
     "cinema": "Cinema",
@@ -151,6 +156,13 @@
     "tryAnotherVibe": "Try another vibe.",
     "preparingStage": "Preparing the stage...",
     "searchingTreasures": "Searching for treasures...",
+    "listened": "listened to",
+    "watched": "watched",
+    "createdList": "created the list",
+    "addedFriend": "added",
+    "genRec": "generated a recommendation for",
+    "accept": "Accept",
+    "reject": "Reject",
     "genres": {
       "action": "Action",
       "comedy": "Comedy",
@@ -163,6 +175,19 @@
       "dance": "Dance",
       "indie": "Indie"
     }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "addToList": "Add to list",
+    "summary": "Summary",
+    "friends": "Friends",
+    "messages": "Messages",
+    "chat": "Chat",
+    "send": "Send"
   },
   "list": {
     "loading": "Loading list...",
@@ -213,6 +238,12 @@
     "removeItem": "Remove",
     "notFound": "List not found.",
     "loading": "Loading list...",
-    "back": "Back"
+    "back": "Back",
+    "magicComplete": "Magic Complete",
+    "collaborators": "Collaborators",
+    "collabInvite": "Invite friends to edit this list with you.",
+    "by": "by",
+    "collaboratorsCount": "collaborators",
+    "alreadyInList": "This item is already in the list."
   }
 }

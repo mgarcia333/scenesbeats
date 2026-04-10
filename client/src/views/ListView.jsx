@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { listsApi, recommendationApi, spotifyApi, movieApi, nodeApi } from '../api';
+import { listsApi, recommendationApi, spotifyApi, movieApi, nodeApi, socialApi } from '../api';
+import LoadingDots from '../components/LoadingDots';
 import {
   ArrowLeft, Trash2, X, Sparkles, Music, Film,
-  ListMusic, Loader2, ExternalLink, Check, ChevronDown, ChevronUp, Search, Plus
+  ListMusic, ExternalLink, Check, ChevronDown, ChevronUp, Search, Plus,
+  Users, UserPlus, Wand2, Share2, Loader2, Info
 } from 'lucide-react';
 
 /* ── Item card ────────────────────────────── */
@@ -21,7 +23,6 @@ const ItemCard = ({ item, canEdit, onRemove }) => {
 
   return (
     <div className="lv-item-card">
-      {/* Cover */}
       <div className="lv-item-cover">
         {item.image_url ? (
           <img src={item.image_url} alt={item.title} className="lv-item-img" />
@@ -30,14 +31,12 @@ const ItemCard = ({ item, canEdit, onRemove }) => {
             {isMovie ? <Film size={24} style={{ opacity: 0.3 }} /> : <Music size={24} style={{ opacity: 0.3 }} />}
           </div>
         )}
-        {/* Type badge */}
         <span className={`lv-item-type-badge ${isMovie ? 'movie' : 'song'}`}>
           {isMovie ? <Film size={10} /> : <Music size={10} />}
         </span>
-        {/* Remove button */}
         {canEdit && (
           <button className="lv-item-remove" onClick={handleRemove} disabled={removing} title="Quitar">
-            {removing ? <Loader2 size={12} className="spin" /> : <X size={12} />}
+            {removing ? <LoadingDots className="mini-loader" /> : <X size={12} />}
           </button>
         )}
       </div>
@@ -47,59 +46,110 @@ const ItemCard = ({ item, canEdit, onRemove }) => {
   );
 };
 
-/* ── Recommendation panel ─────────────────── */
-const RecPanel = ({ recommendation, loading, t }) => {
-  if (loading) {
-    return (
-      <div className="lv-rec-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-muted)' }}>
-          <Loader2 size={20} className="spin" />
-          <span>{t('lists.generating')}</span>
-        </div>
-      </div>
-    );
-  }
-  if (!recommendation) return null;
+/* ── Collaboration Modal ─────────────────── */
+const CollabModal = ({ isOpen, onClose, friends, collaborators, onAdd, onRemove, t }) => {
+  if (!isOpen) return null;
 
   return (
-    <div className="lv-rec-panel">
-      {/* Vibe tag */}
-      <div className="lv-rec-vibe">
-        <Sparkles size={14} />
-        <span>{t('lists.vibe')}: </span>
-        <em>{recommendation.vibra}</em>
-      </div>
-
-      {/* Movie + Song cards */}
-      <div className="lv-rec-cards">
-        {recommendation.pelicula && (
-          <div className="lv-rec-item">
-            {recommendation.poster_url && (
-              <img src={recommendation.poster_url} alt={recommendation.pelicula} className="lv-rec-poster" />
-            )}
-            <div>
-              <div className="lv-rec-label">{t('lists.idealMovie')}</div>
-              <div className="lv-rec-title">{recommendation.pelicula}</div>
-            </div>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title-group">
+            <Users size={20} className="icon-spotify" />
+            <h2 className="modal-title">{t('lists.collaborators') || 'Colaboradores'}</h2>
           </div>
-        )}
-        {recommendation.cancion && (
-          <div className="lv-rec-item">
-            <div className="lv-rec-song-icon"><Music size={20} /></div>
-            <div>
-              <div className="lv-rec-label">{t('lists.idealSong')}</div>
-              <div className="lv-rec-title">{recommendation.cancion}</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Reason */}
-      {recommendation.motivo && (
-        <div className="lv-rec-reason">
-          <span className="lv-rec-label">{t('lists.why')}: </span>
-          <span>{recommendation.motivo}</span>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
+        <div className="modal-body">
+          <p className="lv-ai-sub" style={{ marginBottom: '1.5rem' }}>
+            {t('lists.collabInvite') || 'Invita a tus amigos para que puedan editar esta lista contigo.'}
+          </p>
+          
+          <div className="modal-lists-container">
+            {friends.length === 0 && <p className="text-center py-4 opacity-50">{t('social.noFriends')}</p>}
+            {friends.map(friend => {
+              const isCollab = collaborators.some(c => c.id === friend.id);
+              return (
+                <div key={friend.id} className={`modal-list-item ${isCollab ? 'success' : ''}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img 
+                      src={friend.avatar || '/placeholder-u.png'} 
+                      className="lv-author-avatar" 
+                      alt="" 
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-u.png'; }}
+                    />
+                    <span className="list-name">{friend.name}</span>
+                  </div>
+                  {isCollab ? (
+                    <button className="lv-item-remove" onClick={() => onRemove(friend.id)} style={{ position: 'static' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  ) : (
+                    <button className="lv-ai-add-btn" onClick={() => onAdd(friend.id)}>
+                      <Plus size={16} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Magic Complete Drawer ────────────────── */
+const MagicDrawer = ({ allResults, visibleRecs, onAdd, onClose, loading, t }) => {
+  if (!allResults && !loading) return null;
+
+  const handleAdd = async (rec, idx) => {
+    await onAdd(rec, idx);
+  };
+
+  return (
+    <div className="lv-ai-drawer">
+      <div className="lv-ai-header">
+        <div className="lv-ai-badge">
+          <Wand2 size={16} />
+          <span>{t('lists.magicComplete')}</span>
+        </div>
+        <button className="modal-close" onClick={onClose}><X size={18} /></button>
+      </div>
+
+      {loading ? (
+        <div className="flex-center" style={{ minHeight: '150px' }}>
+          <LoadingDots />
+        </div>
+      ) : (
+        <>
+          {allResults?.vibra && (
+            <p className="lv-ai-vibra">{allResults.vibra}</p>
+          )}
+          <div className="lv-ai-results">
+            {visibleRecs.map((rec, i) => (
+              <div key={rec._poolIdx} className="lv-ai-rec-card animate-fadeIn">
+                <img src={rec.image_url || '/placeholder.png'} className="lv-ai-img" alt="" />
+                <div className="lv-ai-info">
+                  <span className={`lv-ai-type-badge ${rec.tipo}`}>
+                    {rec.tipo === 'movie' ? <Film size={10} /> : <Music size={10} />}
+                  </span>
+                  <div className="lv-ai-title">{rec.titulo}</div>
+                  <div className="lv-ai-sub">{rec.subtitulo}</div>
+                  <div className="lv-ai-motivo">{rec.motivo}</div>
+                </div>
+                <button
+                  className={`lv-ai-add-btn ${rec._added ? 'added' : ''}`}
+                  onClick={() => handleAdd(rec, i)}
+                  disabled={rec._added}
+                  title={rec._added ? 'Ya añadido' : 'Añadir a la lista'}
+                >
+                  {rec._added ? <Check size={16} /> : <Plus size={16} />}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -107,7 +157,7 @@ const RecPanel = ({ recommendation, loading, t }) => {
 
 /* ── Main ListView ────────────────────────── */
 const ListView = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, spotifyConnected } = useAuth();
@@ -115,25 +165,30 @@ const ListView = () => {
   const [list, setList] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // AI recommendation state
-  const [recommendation, setRecommendation] = useState(null);
-  const [generating, setGenerating] = useState(false);
-  const [showRec, setShowRec] = useState(false);
+  // AI & Magic states
+  const [magicResults, setMagicResults] = useState(null);    // full API response
+  const [visibleRecs, setVisibleRecs] = useState([]);         // what's shown (up to 6)
+  const [recPool, setRecPool] = useState([]);                 // reserve pool for replacements
+  const [completing, setCompleting] = useState(false);
+  const [showMagic, setShowMagic] = useState(false);
 
-  // Spotify playlist export state
+  // Collab states
+  const [friends, setFriends] = useState([]);
+  const [showCollabModal, setShowCollabModal] = useState(false);
+
+  // Export & Misc
   const [exporting, setExporting] = useState(false);
-  const [exportMsg, setExportMsg] = useState(null); // { type: 'success'|'error', text, url }
-
-  // Deleting state
+  const [exportMsg, setExportMsg] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Quick search state
+  // Quick search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [searchType, setSearchType] = useState('movie'); // 'movie' or 'song'
+  const [searchType, setSearchType] = useState('movie');
 
   useEffect(() => { if (id) fetchList(); }, [id]);
+  useEffect(() => { if (user) fetchFriends(); }, [user]);
 
   const fetchList = async () => {
     setLoading(true);
@@ -142,6 +197,13 @@ const ListView = () => {
       setList(res.data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  };
+
+  const fetchFriends = async () => {
+    try {
+      const res = await socialApi.getFriends(user.id);
+      setFriends(res.data);
+    } catch (err) { console.error(err); }
   };
 
   const handleRemoveItem = useCallback(async (itemId) => {
@@ -163,54 +225,82 @@ const ListView = () => {
     }
   };
 
-  const handleGenerateRec = async () => {
+  const handleMagicComplete = async () => {
     if (!list?.items?.length) return;
-    setGenerating(true);
-    setShowRec(true);
+    setCompleting(true);
+    setShowMagic(true);
+    setVisibleRecs([]);
+    setRecPool([]);
     try {
-      const res = await recommendationApi.generateFromList({ items: list.items, listName: list.name });
-      setRecommendation(res.data);
-      
-      // Record activity
-      if (user) {
-        socialApi.createActivity({
-          user_id: user.id,
-          type: 'rec_generated',
-          data: {
-            list_id: id,
-            list_name: list.name
-          }
-        }).catch(err => console.error("Activity log error:", err));
-      }
+      const res = await recommendationApi.completeList({ 
+        items: list.items, 
+        listName: list.name,
+        lang: i18n.language,
+        userId: user?.id
+      });
+      const data = res.data;
+      setMagicResults(data);
+      // Tag each rec with a stable pool index and assign first 6 as visible
+      const tagged = (data.recomendaciones || []).map((r, i) => ({ ...r, _poolIdx: i, _added: false }));
+      setVisibleRecs(tagged.slice(0, 6));
+      setRecPool(tagged.slice(6));
     } catch (err) { console.error(err); }
-    finally { setGenerating(false); }
+    finally { setCompleting(false); }
   };
 
-  const handleExportSpotify = async () => {
-    const songs = list?.items?.filter(i => i.type === 'song');
-    if (!songs?.length) {
-      setExportMsg({ type: 'error', text: t('lists.spotifyNoSongs') });
-      setTimeout(() => setExportMsg(null), 3000);
-      return;
-    }
-    setExporting(true);
-    setExportMsg(null);
+  const handleAddItem = async (item, poolIdx) => {
     try {
-      const res = await spotifyApi.createPlaylist({
-        name: list.name,
-        description: `Lista de ScenesBeats`,
-        songs,
-      });
-      setExportMsg({
-        type: 'success',
-        text: `${t('lists.spotifySuccess')} (${res.data.tracks_added} canciones)`,
-        url: res.data.playlist_url,
-      });
+      const payload = {
+        external_id: String(item.id || item.external_id),
+        title: item.title || item.name || item.titulo,
+        subtitle: item.subtitle || item.year || item.artist || item.subtitulo,
+        image_url: item.image_url || item.poster || item.artwork,
+        type: item.type || item.tipo || searchType
+      };
+      const res = await listsApi.addItem(id, payload);
+      setList(prev => ({ ...prev, items: [...(prev.items || []), res.data] }));
+      
+      // If poolIdx is defined, replace this card with next from pool
+      if (poolIdx !== undefined) {
+        setVisibleRecs(prev => {
+          const next = [...prev];
+          if (recPool.length > 0) {
+            // Replace with next from pool
+            const [nextRec, ...restPool] = recPool;
+            setRecPool(restPool);
+            next[poolIdx] = nextRec;
+          } else {
+            // Mark as added (no replacement available)
+            next[poolIdx] = { ...next[poolIdx], _added: true };
+          }
+          return next;
+        });
+      }
+
+      // If added from search, clear
+      if (searchQuery) setSearchQuery('');
+      if (searchResults.length) setSearchResults([]);
     } catch (err) {
-      setExportMsg({ type: 'error', text: t('lists.spotifyError') });
-    } finally {
-      setExporting(false);
+      if (err.response?.status === 409) alert(t('lists.alreadyInList'));
+      else console.error('Add item error:', err);
     }
+  };
+
+  const handleAddCollab = async (uId) => {
+    try {
+      await listsApi.addCollaborator(id, uId);
+      // Refresh list to see new collab
+      const res = await listsApi.getOne(id);
+      setList(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleRemoveCollab = async (uId) => {
+    try {
+      await listsApi.removeCollaborator(id, uId);
+      const res = await listsApi.getOne(id);
+      setList(res.data);
+    } catch (err) { console.error(err); }
   };
 
   const handleQuickSearch = async (e) => {
@@ -223,9 +313,8 @@ const ListView = () => {
 
     setSearching(true);
     try {
-      let res;
       if (searchType === 'movie') {
-        res = await movieApi.search(query);
+        const res = await movieApi.search(query);
         setSearchResults(res.data);
       } else {
         const spotifyRes = await nodeApi.get(`/spotify/search?query=${query}&type=track`);
@@ -238,223 +327,229 @@ const ListView = () => {
         }));
         setSearchResults(tracks);
       }
-    } catch (err) {
-      if (err.response?.status === 401) {
-        setSearchResults([]);
-        console.warn("Spotify search Unauthorized (401) - session might be expired");
-      } else {
-        console.error('Quick search error:', err);
-      }
-    } finally {
-      setSearching(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setSearching(false); }
   };
 
-  const handleAddItem = async (item) => {
+  const handleExportSpotify = async () => {
+    const songs = list?.items?.filter(i => i.type === 'song');
+    if (!songs?.length) {
+      setExportMsg({ type: 'error', text: t('lists.spotifyNoSongs') });
+      setTimeout(() => setExportMsg(null), 3000);
+      return;
+    }
+    setExporting(true);
     try {
-      const res = await listsApi.addItem(id, {
-        external_id: String(item.id),
-        title: item.title || item.name,
-        subtitle: item.subtitle || item.year || item.artist,
-        image_url: item.image_url || item.poster || item.artwork,
-        type: item.type || searchType
-      });
-      setList(prev => ({ ...prev, items: [...(prev.items || []), res.data] }));
-      setSearchQuery('');
-      setSearchResults([]);
-    } catch (err) {
-      if (err.response?.status === 409) {
-        alert("Este elemento ya está en la lista.");
-      } else {
-        console.error('Add item error:', err);
-        alert("Error al añadir el elemento.");
-      }
-    }
+      const res = await spotifyApi.createPlaylist({ name: list.name, songs });
+      setExportMsg({ type: 'success', text: t('lists.spotifySuccess'), url: res.data.playlist_url });
+    } catch (err) { setExportMsg({ type: 'error', text: t('lists.spotifyError') }); }
+    finally { setExporting(false); }
   };
 
-  /* ─── States ─────── */
-  if (loading) {
-    return (
-      <div className="view-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <Loader2 size={40} className="spin" style={{ color: 'var(--primary-color)', marginBottom: '1rem' }} />
-          <p className="stat-label">{t('lists.loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!list) {
-    return (
-      <div className="view-container" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-        <ListMusic size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-        <p className="stat-label">{t('lists.notFound')}</p>
-        <button className="rec-button" style={{ marginTop: '1rem' }} onClick={() => navigate('/lists')}>
-          {t('lists.back')}
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex-center"><LoadingDots /></div>;
+  if (!list) return <div className="view-container text-center pt-16"><p>{t('lists.notFound')}</p></div>;
 
   const isOwner = user?.id === list.user_id;
+  const isCollaborator = list.collaborators?.some(c => c.id === user?.id);
+  const canEdit = isOwner || isCollaborator;
+  
   const movies = list.items?.filter(i => i.type === 'movie') || [];
   const songs = list.items?.filter(i => i.type === 'song') || [];
-  const totalItems = list.items?.length || 0;
+  const firstMovie = movies[0];
 
   return (
-    <div className="view-container">
-      {/* ── Top bar ── */}
-      <div className="lv-topbar">
-        <button className="lv-back-btn" onClick={() => navigate('/lists')}>
-          <ArrowLeft size={20} />
-        </button>
-        <div className="lv-topbar-title">
-          <h1 className="lv-list-name">{list.name}</h1>
-          <div className="lv-list-meta">
-            {movies.length > 0 && <span className="lv-meta-pill movie"><Film size={11} /> {movies.length}</span>}
-            {songs.length > 0 && <span className="lv-meta-pill song"><Music size={11} /> {songs.length}</span>}
+    <div className="lv-premium-container">
+      {/* ── HERO HEADER ── */}
+      <header className="lv-hero-header">
+        <div className="lv-header-backdrop">
+          <img src={list.cover_image_url || firstMovie?.image_url || '/placeholder.png'} className="lv-backdrop-img" alt="" />
+          <div className="lv-backdrop-overlay" />
+        </div>
+
+        <div className="lv-header-content">
+          <img src={list.cover_image_url || firstMovie?.image_url || '/placeholder.png'} className="lv-main-cover animate-fadeIn" alt="" />
+          
+          <div className="lv-info-pane">
+            <h1 className="lv-name-h1">{list.name}</h1>
+            <div className="lv-people-group">
+              <div className="lv-avatars-stack">
+                {(() => {
+                  const ownerAvatar = isOwner ? (user?.avatar || user?.image || list.user?.avatar) : list.user?.avatar;
+                  const ownerName = isOwner ? (user?.name || list.user?.name) : list.user?.name;
+                  return (
+                    <img 
+                      src={ownerAvatar || '/placeholder-u.png'} 
+                      className="lv-author-avatar-main" 
+                      alt={ownerName} 
+                      title={`${t('lists.by')} ${ownerName}`} 
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-u.png'; }}
+                    />
+                  );
+                })()}
+                {list.collaborators?.map(collab => {
+                  const isCollabUser = collab.id === user?.id;
+                  const collabAvatar = isCollabUser ? (user?.avatar || user?.image || collab.avatar) : collab.avatar;
+                  const collabName = isCollabUser ? (user?.name || collab.name) : collab.name;
+                  return (
+                    <img 
+                      key={collab.id} 
+                      src={collabAvatar || '/placeholder-u.png'} 
+                      className="lv-collab-avatar-item" 
+                      alt={collabName} 
+                      title={collabName} 
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-u.png'; }}
+                    />
+                  );
+                })}
+                {isOwner && (
+                  <button className="lv-add-collab-btn" onClick={() => setShowCollabModal(true)} title={t('lists.addCollaborators')}>
+                    <UserPlus size={14} />
+                  </button>
+                )}
+              </div>
+              <div className="lv-people-text">
+                <span className="lv-author-name">{isOwner ? (user?.name || list.user?.name) : list.user?.name}</span>
+                {list.collaborators?.length > 0 && (
+                  <span className="lv-collab-count">
+                    + {list.collaborators.length} {t('lists.collaboratorsCount') || 'colaboradores'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {list.description && <p className="lv-desc-text">{list.description}</p>}
           </div>
         </div>
+
+        {/* Back button */}
+        <button className="lv-back-btn" onClick={() => navigate('/lists')} style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 100 }}>
+          <ArrowLeft size={20} />
+        </button>
+      </header>
+
+      {/* ── ACTION BUTTONS ── */}
+      <div className="lv-premium-actions">
+        {canEdit && (
+          <button className="lv-prime-btn magic" onClick={handleMagicComplete} disabled={completing}>
+            {completing ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
+            {t('lists.magicComplete') || 'Completar con IA'}
+          </button>
+        )}
+        {spotifyConnected && songs.length > 0 && (
+          <button className="lv-prime-btn secondary" onClick={handleExportSpotify} disabled={exporting}>
+            {exporting ? <Loader2 size={18} className="spin" /> : <Share2 size={18} />}
+            Spotify
+          </button>
+        )}
         {isOwner && (
-          <button className="lv-delete-btn" onClick={handleDeleteList} disabled={deleting} title="Eliminar lista">
-            {deleting ? <Loader2 size={18} className="spin" /> : <Trash2 size={18} />}
+          <button className="lv-prime-btn secondary" onClick={handleDeleteList} disabled={deleting} title="Eliminar">
+            <Trash2 size={18} />
           </button>
         )}
       </div>
 
-      {/* ── Action buttons ── */}
-      {totalItems > 0 && (
-        <div className="lv-actions">
-          <button className="lv-action-btn rec-btn" onClick={handleGenerateRec} disabled={generating}>
-            <Sparkles size={16} />
-            {generating ? t('lists.generating') : t('lists.getRec')}
-          </button>
-          {spotifyConnected && (
-            <button className="lv-action-btn spotify-btn" onClick={handleExportSpotify} disabled={exporting}>
-              {exporting ? <Loader2 size={16} className="spin" /> : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                </svg>
-              )}
-              {t('lists.spotifyPlaylist')}
-            </button>
-          )}
-        </div>
-      )}
+      <div className="lv-content-section">
+        {/* Magic Drawer */}
+        {showMagic && (
+          <MagicDrawer 
+            allResults={magicResults}
+            visibleRecs={visibleRecs}
+            loading={completing} 
+            onClose={() => setShowMagic(false)} 
+            onAdd={handleAddItem}
+            t={t}
+          />
+        )}
 
-      {/* ── Export message ── */}
-      {exportMsg && (
-        <div className={`lv-export-msg ${exportMsg.type}`}>
-          {exportMsg.type === 'success' ? <Check size={16} /> : <X size={16} />}
-          <span>{exportMsg.text}</span>
-          {exportMsg.url && (
-            <a href={exportMsg.url} target="_blank" rel="noopener noreferrer" className="lv-spotify-link">
-              <ExternalLink size={14} /> Abrir en Spotify
-            </a>
-          )}
-        </div>
-      )}
-
-      {/* ── AI Recommendation panel ── */}
-      {showRec && (
-        <div style={{ marginBottom: '2rem' }}>
-          <button
-            className="lv-rec-toggle"
-            onClick={() => setShowRec(!showRec)}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', fontWeight: 600, fontSize: '0.9rem', padding: '0.5rem 0', marginBottom: '0.75rem' }}
-          >
-            <Sparkles size={16} />
-            {t('lists.recTitle')}
-            {showRec ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-          <RecPanel recommendation={recommendation} loading={generating} t={t} />
-        </div>
-      )}
-
-      {/* ── Empty state ── */}
-      {totalItems === 0 && (
-        <div className="lists-empty" style={{ marginTop: '2rem' }}>
-          <ListMusic size={40} style={{ opacity: 0.25 }} />
-          <p className="lists-empty-text">{t('list.empty')}</p>
-        </div>
-      )}
-
-      {/* ── Quick Add section ── */}
-      {isOwner && (
-        <div className="lv-quick-add">
-          <h2 className="section-title">{t('lists.addItem') || 'Añadir nuevo contenido'}</h2>
-          <div className="lv-search-controls">
-            <div className="lv-search-input-box">
-              <Search size={18} className="lv-search-icon" />
-              <input
-                type="text"
-                className="lv-search-input"
-                placeholder={searchType === 'movie' ? 'Buscar película...' : 'Buscar canción...'}
-                value={searchQuery}
-                onChange={handleQuickSearch}
-              />
-              {searching && <Loader2 size={18} className="spin lv-search-loader" />}
-            </div>
-            <div className="lv-search-type-toggle">
-              <button 
-                className={`type-btn ${searchType === 'movie' ? 'active' : ''}`}
-                onClick={() => { setSearchType('movie'); setSearchQuery(''); setSearchResults([]); }}
-              >
-                <Film size={14} /> Pelis
-              </button>
-              <button 
-                className={`type-btn ${searchType === 'song' ? 'active' : ''}`}
-                onClick={() => { setSearchType('song'); setSearchQuery(''); setSearchResults([]); }}
-              >
-                <Music size={14} /> Música
-              </button>
-            </div>
+        {/* Export Message */}
+        {exportMsg && (
+          <div className={`lv-export-msg ${exportMsg.type}`} style={{ marginBottom: '2rem' }}>
+            {exportMsg.type === 'success' ? <Check size={16} /> : <X size={16} />}
+            <span>{exportMsg.text}</span>
+            {exportMsg.url && <a href={exportMsg.url} target="_blank" className="lv-spotify-link"><ExternalLink size={14} /> Abrir</a>}
           </div>
+        )}
 
-          {searchResults.length > 0 && (
-            <div className="lv-quick-results animate-fadeIn">
-              {searchResults.map((res, idx) => (
-                <div key={res.id + idx} className="lv-quick-result-item" onClick={() => handleAddItem(res)}>
-                  <img src={res.image_url || res.poster || res.artwork} alt="" className="qr-img" />
-                  <div className="qr-info">
-                    <div className="qr-title">{res.title || res.name}</div>
-                    <div className="qr-sub">{res.subtitle || res.year || res.artist}</div>
+        {/* Search / Add */}
+        {canEdit && (
+          <div className="lv-quick-add" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '3rem' }}>
+            <div className="lv-search-controls">
+              <div className="lv-search-input-box">
+                <Search size={18} className="lv-search-icon" />
+                <input
+                  type="text"
+                  className="lv-search-input"
+                  placeholder={searchType === 'movie' ? t('search.placeholderMovie') : t('search.placeholderSong')}
+                  value={searchQuery}
+                  onChange={handleQuickSearch}
+                />
+                {searching && <LoadingDots className="mini-loader lv-search-loader" />}
+              </div>
+              <div className="lv-search-type-toggle">
+                <button className={`type-btn ${searchType === 'movie' ? 'active' : ''}`} onClick={() => setSearchType('movie')}><Film size={14} /></button>
+                <button className={`type-btn ${searchType === 'song' ? 'active' : ''}`} onClick={() => setSearchType('song')}><Music size={14} /></button>
+              </div>
+            </div>
+
+            {searchResults.length > 0 && (
+              <div className="lv-quick-results">
+                {searchResults.map((res, idx) => (
+                  <div key={res.id + idx} className="lv-quick-result-item" onClick={() => handleAddItem(res)}>
+                    <img src={res.image_url || res.poster || res.artwork} alt="" className="qr-img" />
+                    <div className="qr-info">
+                      <div className="qr-title">{res.title || res.name}</div>
+                      <div className="qr-sub">{res.subtitle || res.year || res.artist}</div>
+                    </div>
+                    <Plus size={18} />
                   </div>
-                  <Plus size={18} />
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Items Grid */}
+        <section className="feed-section">
+          {movies.length > 0 && (
+            <div style={{ marginBottom: '3rem' }}>
+              <h2 className="section-title"><Film size={18} /> {t('lists.movies')}</h2>
+              <div className="lv-items-grid">
+                {movies.map(item => (
+                  <ItemCard key={item.id} item={item} canEdit={canEdit} onRemove={handleRemoveItem} />
+                ))}
+              </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── Movies section ── */}
-      {movies.length > 0 && (
-        <section className="feed-section">
-          <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Film size={18} /> Películas <span className="lv-count-badge">{movies.length}</span>
-          </h2>
-          <div className="lv-items-grid">
-            {movies.map(item => (
-              <ItemCard key={item.id} item={item} canEdit={isOwner} onRemove={handleRemoveItem} />
-            ))}
-          </div>
-        </section>
-      )}
+          {songs.length > 0 && (
+            <div>
+              <h2 className="section-title"><Music size={18} /> {t('lists.songs')}</h2>
+              <div className="lv-items-grid">
+                {songs.map(item => (
+                  <ItemCard key={item.id} item={item} canEdit={canEdit} onRemove={handleRemoveItem} />
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* ── Songs section ── */}
-      {songs.length > 0 && (
-        <section className="feed-section" style={{ marginTop: movies.length > 0 ? '2.5rem' : 0 }}>
-          <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Music size={18} /> Canciones <span className="lv-count-badge">{songs.length}</span>
-          </h2>
-          <div className="lv-items-grid">
-            {songs.map(item => (
-              <ItemCard key={item.id} item={item} canEdit={isOwner} onRemove={handleRemoveItem} />
-            ))}
-          </div>
+          {list.items?.length === 0 && (
+            <div className="flex-center opacity-30 flex-col gap-4">
+              <ListMusic size={64} />
+              <p>{t('lists.empty') || 'Esta lista aún no tiene contenido.'}</p>
+            </div>
+          )}
         </section>
-      )}
+      </div>
+
+      <CollabModal 
+        isOpen={showCollabModal} 
+        onClose={() => setShowCollabModal(false)}
+        friends={friends}
+        collaborators={list.collaborators || []}
+        onAdd={handleAddCollab}
+        onRemove={handleRemoveCollab}
+        t={t}
+      />
     </div>
   );
 };

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
-import { X, ListPlus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, ListPlus, CheckCircle2, AlertCircle } from 'lucide-react';
+import LoadingDots from './LoadingDots';
 
 const AddToListModal = ({ item, onClose }) => {
   const { t } = useTranslation();
@@ -73,7 +74,7 @@ const AddToListModal = ({ item, onClose }) => {
           <div className="modal-lists-container">
             {loading ? (
               <div className="flex-center p-4">
-                <Loader2 className="spin" size={24} />
+                <LoadingDots />
               </div>
             ) : lists.length > 0 ? (
               lists.map(list => (
@@ -86,7 +87,7 @@ const AddToListModal = ({ item, onClose }) => {
                   <span className="list-name">{list.name}</span>
                   <div className="list-action">
                     {addingTo === list.id ? (
-                      <Loader2 size={16} className="spin" />
+                      <LoadingDots className="mini-loader" />
                     ) : status.listId === list.id ? (
                       status.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />
                     ) : (

@@ -23,4 +23,9 @@ class MediaList extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function collaborators()
+    {
+        return $this->belongsToMany(User::class, 'media_list_collaborators', 'media_list_id', 'user_id')->withTimestamps();
+    }
 }

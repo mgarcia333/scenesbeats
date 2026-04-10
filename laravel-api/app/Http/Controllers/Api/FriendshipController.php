@@ -70,6 +70,13 @@ class FriendshipController extends Controller
             'status' => 'pending'
         ]);
 
+        // Real-time notification to the recipient
+        \App\Helpers\NodeBroadcaster::broadcast('friend_request', [
+            'recipient_id' => $request->recipient_id,
+            'from' => $friendship->sender->name,
+            'sender_avatar' => $friendship->sender->avatar
+        ]);
+
         return response()->json($friendship, 201);
     }
 
@@ -82,21 +89,26 @@ class FriendshipController extends Controller
             'status' => 'required|in:accepted,rejected'
         ]);
 
-        $friendship = Friendship::find($id);
+        $friendship = Friendship::with(['sender', 'recipient'])->find($id);
         if (!$friendship) return response()->json(['error' => 'Request not found'], 404);
 
         $friendship->status = $request->status;
         $friendship->save();
 
         if ($request->status === 'accepted') {
-            // Record activity for both? Or just the one who accepted?
-            // Usually we show "User A and User B are now friends"
+            // Record activity
             Activity::create([
                 'user_id' => $friendship->recipient_id,
                 'type' => 'friend_added',
                 'subject_id' => $friendship->sender_id,
                 'subject_type' => User::class,
                 'data' => ['friend_name' => $friendship->sender->name]
+            ]);
+
+            // Notify sender
+            \App\Helpers\NodeBroadcaster::broadcast('friend_accepted', [
+                'recipient_id' => $friendship->sender_id,
+                'friend_name' => $friendship->recipient->name
             ]);
         }
 

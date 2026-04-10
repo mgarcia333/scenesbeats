@@ -14,6 +14,7 @@ import ListView from './views/ListView';
 import Lists from './views/Lists';
 import ItemDetail from './views/ItemDetail';
 import UserProfile from './views/UserProfile';
+import Chat from './views/Chat';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { io } from 'socket.io-client';
@@ -92,6 +93,11 @@ const MainLayout = () => {
                     <Route path="/list/:id" element={
                         <PrivateRoute>
                             <ListView />
+                        </PrivateRoute>
+                    } />
+                    <Route path="/chat/:friendId" element={
+                        <PrivateRoute>
+                            <Chat />
                         </PrivateRoute>
                     } />
                     <Route path="/movie/:id" element={

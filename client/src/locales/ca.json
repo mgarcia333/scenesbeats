@@ -19,7 +19,7 @@
     "reacted": "ha reaccionat a",
     "watched": "ha vist",
     "timeAgo": "fa {{count}}{{unit}}",
-    "trendingMovies": "Pel·lícules en tendència",
+    "latestRecommendations": "Últimes recomanacions",
     "connectCTA": "Connecta Spotify o Letterboxd des del teu perfil per veure la teva activitat aquí.",
     "goToProfile": "Anar al perfil",
     "or": "o"
@@ -140,8 +140,13 @@
     "why": "Per què?",
     "vibe": "VIBRA"
   },
-  "comm": {
+  "community": {
     "title": "Comunitat",
+    "activities": "Activitat recent",
+    "requests": "Sol·licituds pendents",
+    "suggestions": "Suggeriments",
+    "suggestionsDesc": "Suggeriments basats en els teus gustos.",
+    "noActivity": "No hi ha activitat recent.",
     "searchPlaceholderMovies": "Busca una pel·lícula que t'ofereixi...",
     "searchPlaceholderMusic": "Busca aquest ritme que tens al cap...",
     "cinema": "Cinema",
@@ -151,6 +156,13 @@
     "tryAnotherVibe": "Prova una altra vibra.",
     "preparingStage": "Preparant l'escenari...",
     "searchingTreasures": "Buscant tresors...",
+    "listened": "ha escoltat",
+    "watched": "ha vist",
+    "createdList": "ha creat la llista",
+    "addedFriend": "ha afegit",
+    "genRec": "ha generat una recomanació per a",
+    "accept": "Acceptar",
+    "reject": "Rebutjar",
     "genres": {
       "action": "Acció",
       "comedy": "Comèdia",
@@ -163,6 +175,19 @@
       "dance": "Dance",
       "indie": "Indie"
     }
+  },
+  "common": {
+    "loading": "Carregant...",
+    "error": "Ha ocorregut un error",
+    "back": "Tornar",
+    "save": "Guardar",
+    "cancel": "Cancel·lar",
+    "addToList": "Afegir a llista",
+    "summary": "Resum",
+    "friends": "Amics",
+    "messages": "Missatges",
+    "chat": "Xat",
+    "send": "Enviar"
   },
   "list": {
     "loading": "Carregant llista...",
@@ -213,6 +238,12 @@
     "removeItem": "Treure",
     "notFound": "Llista no trobada.",
     "loading": "Carregant llista...",
-    "back": "Tornar"
+    "back": "Tornar",
+    "magicComplete": "Magic Complete",
+    "collaborators": "Col·laboradors",
+    "collabInvite": "Convida als teus amics per a que puguin editar aquesta llista amb tu.",
+    "by": "per",
+    "collaboratorsCount": "col·laboradors",
+    "alreadyInList": "Aquest element ja és a la llista."
   }
 }

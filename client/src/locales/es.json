@@ -19,7 +19,7 @@
     "reacted": "reaccionó a",
     "watched": "vio",
     "timeAgo": "hace {{count}}{{unit}}",
-    "trendingMovies": "Películas en tendencia",
+    "latestRecommendations": "Últimas recomendaciones",
     "connectCTA": "Conecta Spotify o Letterboxd desde tu perfil para ver tu actividad aquí.",
     "goToProfile": "Ir al perfil",
     "or": "o"
@@ -200,7 +200,8 @@
     "addedFriend": "ahora es amigo de",
     "genRec": "ha generado una recomendación para la lista",
     "accept": "Aceptar",
-    "reject": "Rechazar"
+    "reject": "Rechazar",
+    "activities": "Actividad reciente"
   },
   "common": {
     "loading": "Cargando...",
@@ -209,7 +210,11 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "addToList": "Añadir a lista",
-    "summary": "Resumen"
+    "summary": "Resumen",
+    "friends": "Amigos",
+    "messages": "Mensajes",
+    "chat": "Chat",
+    "send": "Enviar"
   },
   "lists": {
     "title": "Mis Listas",
@@ -236,6 +241,12 @@
     "removeItem": "Quitar",
     "notFound": "Lista no encontrada.",
     "loading": "Cargando lista...",
-    "back": "Volver"
+    "back": "Volver",
+    "magicComplete": "Magic Complete",
+    "collaborators": "Colaboradores",
+    "collabInvite": "Invita a tus amigos para que puedan editar esta lista contigo.",
+    "by": "por",
+    "collaboratorsCount": "colaboradores",
+    "alreadyInList": "Este elemento ya está en la lista."
   }
 }

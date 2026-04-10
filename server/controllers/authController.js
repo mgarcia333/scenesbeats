@@ -107,7 +107,8 @@ export const getCurrentUser = async (req, res) => {
         spotify_id: response.data.id,
         name: response.data.display_name,
         email: response.data.email,
-        image: response.data.images?.[0]?.url || null,
+        avatar: response.data.images?.[0]?.url || null,
+        image: response.data.images?.[0]?.url || null, // Keep for backward compatibility
         letterboxd_username: laravelSync.user.letterboxd_username || null,
       }
     });

@@ -17,7 +17,12 @@ class MediaListController extends Controller
             return response()->json(['error' => 'user_id required'], 400);
         }
 
-        $lists = MediaList::with('items')->where('user_id', $userId)->get();
+        $lists = MediaList::with(['items', 'collaborators', 'user'])
+            ->where('user_id', $userId)
+            ->orWhereHas('collaborators', function($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->get();
         return response()->json($lists);
     }
 
@@ -54,7 +59,7 @@ class MediaListController extends Controller
 
     public function show($id)
     {
-        $list = MediaList::with('items')->find($id);
+        $list = MediaList::with(['items', 'collaborators', 'user'])->find($id);
         
         if (!$list) {
             return response()->json(['error' => 'Not Found'], 404);
@@ -142,5 +147,33 @@ class MediaListController extends Controller
 
         $item->delete();
         return response()->json(['message' => 'Item removed from list']);
+    }
+
+    public function addCollaborator(Request $request, $id)
+    {
+        $list = MediaList::find($id);
+        if (!$list) return response()->json(['error' => 'List Not Found'], 404);
+
+        $request->validate(['user_id' => 'required|exists:users,id']);
+        
+        if ($list->user_id == $request->user_id) {
+            return response()->json(['error' => 'Owner cannot be a collaborator'], 400);
+        }
+
+        $list->collaborators()->syncWithoutDetaching([$request->user_id]);
+
+        return response()->json(['message' => 'Collaborator added successfully']);
+    }
+
+    public function removeCollaborator(Request $request, $id)
+    {
+        $list = MediaList::find($id);
+        if (!$list) return response()->json(['error' => 'List Not Found'], 404);
+
+        $request->validate(['user_id' => 'required|exists:users,id']);
+        
+        $list->collaborators()->detach($request->user_id);
+
+        return response()->json(['message' => 'Collaborator removed successfully']);
     }
 }

@@ -1,7 +1,6 @@
-<?php
-
 namespace App\Models;
 
+use App\Helpers\NodeBroadcaster;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,5 +22,15 @@ class Activity extends Model
     public function subject()
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Automatic broadcast after creation
+     */
+    protected static function booted()
+    {
+        static::created(function ($activity) {
+            NodeBroadcaster::broadcast('new_activity', $activity->load('user')->toArray());
+        });
     }
 }

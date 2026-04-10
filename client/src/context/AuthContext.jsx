@@ -165,6 +165,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       isAuthenticated,
       spotifyConnected,
+      setSpotifyConnected,
       login,
       logout,
       register,

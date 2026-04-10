@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { socialApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +7,9 @@ import {
   Users, UserPlus, Check, X, Clock, MessageSquare, 
   Heart, Sparkles, Film, Music, List as ListIcon 
 } from 'lucide-react';
+
+import LoadingDots from '../components/LoadingDots';
+import { socket } from '../App';
 
 const ActivityCard = ({ activity }) => {
   const { t } = useTranslation();
@@ -66,21 +70,48 @@ const Community = () => {
   const { user } = useAuth();
   const [activities, setActivities] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
+
+    // Listen for real-time activities
+    socket.on('new_activity', (newAct) => {
+      console.log("📣 Real-time activity received:", newAct);
+      setActivities(prev => [newAct, ...prev]);
+    });
+
+    socket.on('friend_request', (data) => {
+      console.log("👥 Friend request received:", data);
+      // We could add it manually or just re-fetch to get the full object
+      fetchData();
+    });
+
+    socket.on('friend_accepted', (data) => {
+      console.log("✅ Friend request accepted:", data);
+      fetchData();
+    });
+
+    return () => {
+      socket.off('new_activity');
+      socket.off('friend_request');
+      socket.off('friend_accepted');
+    };
   }, [user]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [actRes, pendRes] = await Promise.all([
+      const [actRes, pendRes, friendsRes] = await Promise.all([
         socialApi.getActivities(),
-        user ? socialApi.getPendingRequests(user.id) : Promise.resolve({ data: [] })
+        user ? socialApi.getPendingRequests(user.id) : Promise.resolve({ data: [] }),
+        user ? socialApi.getFriends(user.id) : Promise.resolve({ data: [] })
       ]);
       setActivities(actRes.data);
       setPendingRequests(pendRes.data);
+      setFriends(friendsRes.data);
     } catch (err) {
       console.error("Error fetching community data:", err);
     } finally {
@@ -98,11 +129,21 @@ const Community = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="view-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <LoadingDots />
+      </div>
+    );
+  }
+
   return (
     <div className="view-container animate-fadeIn">
       <div className="community-layout">
         <div className="community-main">
-          <h1 className="view-title">{t('community.title')}</h1>
+          <div className="lists-header">
+            <h2 className="section-title" style={{ marginBottom: 0 }}>{t('community.title')}</h2>
+          </div>
           
           <div className="activity-feed">
             {activities.length > 0 ? (
@@ -141,6 +182,35 @@ const Community = () => {
               </div>
             </div>
           )}
+
+          <div className="sidebar-section">
+            <h2 className="section-title">{t('common.friends') || 'Amigos'}</h2>
+            <div className="sidebar-friends-list">
+              {friends.length > 0 ? (
+                friends.map(friend => (
+                  <div key={friend.id} className="sidebar-friend-card">
+                    <div className="friend-info-group">
+                      <img 
+                        src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} 
+                        className="user-avatar-sm" 
+                        alt="" 
+                      />
+                      <span className="friend-name">{friend.name}</span>
+                    </div>
+                    <button 
+                      className="chat-link-btn" 
+                      onClick={() => navigate(`/chat/${friend.id}`)}
+                      title="Abrir Chat"
+                    >
+                      <MessageSquare size={16} />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted small">No tienes amigos agregados aún.</p>
+              )}
+            </div>
+          </div>
 
           <div className="sidebar-section">
             <h2 className="section-title">{t('community.suggestions')}</h2>

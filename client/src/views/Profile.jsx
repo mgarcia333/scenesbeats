@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { socialApi, spotifyApi, movieApi, favoritesApi, listsApi } from '../api';
 import {
   Music, Film, Star, PlusCircle, Circle, Check, Plus,
-  X, Loader2, ExternalLink, RefreshCw, LogOut, Radio, List as ListIcon,
+  X, ExternalLink, RefreshCw, LogOut, Radio, List as ListIcon,
   Search, Trash2
 } from 'lucide-react';
+import LoadingDots from '../components/LoadingDots';
 import HorizontalScroll from '../components/HorizontalScroll';
 
 /* ─────────────────────────────────────────────
@@ -131,7 +132,7 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
         </div>
 
         <div className="search-results-mini">
-          {loading && <div className="loading-inline"><Loader2 size={20} className="spin" /> Buscando...</div>}
+          {loading && <div className="loading-inline"><LoadingDots className="mini-loader" /> Buscando...</div>}
           {!loading && results.map(item => (
             <div key={item.id} className="search-result-row" onClick={() => selectItem(item)}>
               <img src={item.image || 'https://placehold.co/40/1a1a1a/ffffff?text=?'} alt="" className="result-mini-img" />
@@ -227,7 +228,7 @@ const LetterboxdModal = ({ onClose, onSave, currentUsername }) => {
             onClick={handleSave}
             disabled={loading || !username.trim()}
           >
-            {loading ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+            {loading ? <LoadingDots className="mini-loader" /> : <Check size={16} />}
             {loading ? t('profile.saving') : t('profile.save')}
           </button>
         </div>
@@ -261,7 +262,7 @@ const Profile = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, spotifyConnected, connectLetterboxd, connectSpotify, refreshAuth } = useAuth();
+  const { user, logout, spotifyConnected, setSpotifyConnected, connectLetterboxd, connectSpotify, refreshAuth } = useAuth();
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
 
@@ -674,7 +675,7 @@ const Profile = () => {
               </button>
             </div>
           ) : loadingSpotify ? (
-            <div className="loading-inline"><Loader2 size={20} className="spin" /> {t('profile.loadingMusic')}</div>
+            <div className="loading-inline"><LoadingDots className="mini-loader" /> {t('profile.loadingMusic')}</div>
           ) : (
             <HorizontalScroll>
               {recentSongs.map((song, idx) => (
@@ -702,7 +703,7 @@ const Profile = () => {
               </button>
             </div>
           ) : loadingLB ? (
-            <div className="loading-inline"><Loader2 size={20} className="spin" /> {t('profile.loadingMovies')}</div>
+            <div className="loading-inline"><LoadingDots className="mini-loader" /> {t('profile.loadingMovies')}</div>
           ) : (
             <HorizontalScroll>
               {lbMovies.map((movie, idx) => (
