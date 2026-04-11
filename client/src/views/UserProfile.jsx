@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { socialApi } from '../api';
+import { socialApi, favoritesApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { 
   UserPlus, Check, Clock, Film, Music, 
-  ChevronLeft, Star, List as ListIcon 
+  ChevronLeft, Star, List as ListIcon, Circle, Radio 
 } from 'lucide-react';
 import HorizontalScroll from '../components/HorizontalScroll';
 import { socket } from '../App';
@@ -66,6 +66,42 @@ const UserProfile = () => {
     } finally {
       setLoadingAction(false);
     }
+  };
+
+  const getFavoriteAt = (type, pos) => {
+    return favorites.find(f => f.type === type && f.position === pos);
+  };
+
+  const ReadOnlyFavoriteSlot = ({ type, position }) => {
+    const fav = getFavoriteAt(type, position);
+    const isPerson = type === 'actor_fav' || type === 'director_fav';
+    const isMedia = type === 'movie_fav' || type === 'song_fav' || type === 'album_fav';
+    
+    if (fav) {
+      return (
+        <div className={`fav-slot-item ${isPerson ? 'person' : ''} ${isMedia ? 'media' : ''}`}>
+          <img src={fav.image_url || 'https://placehold.co/80/1a1a1a/ffffff?text=?'} alt="" className="fav-slot-img" />
+        </div>
+      );
+    }
+
+    return (
+      <div className={`fav-slot-item empty ${isPerson ? 'person' : ''} ${isMedia ? 'media' : ''}`} style={{ cursor: 'default' }}>
+      </div>
+    );
+  };
+
+  const ReadOnlyGustoSection = ({ title, type, icon: IconComponent }) => {
+    return (
+      <div className="gusto-category">
+        <h3 className="gusto-category-title">
+          <IconComponent size={14} /> <span>{title}</span>
+        </h3>
+        <div className="gusto-row">
+          {[1, 2, 3, 4].map(pos => <ReadOnlyFavoriteSlot key={`${type}-${pos}`} type={type} position={pos} />)}
+        </div>
+      </div>
+    );
   };
 
   if (loading) return <div className="loader-container"><div className="loader spin"></div></div>;

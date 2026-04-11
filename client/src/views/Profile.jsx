@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { socialApi, spotifyApi, movieApi, favoritesApi, listsApi } from '../api';
+import { socialApi, spotifyApi, movieApi, favoritesApi, listsApi, authApi } from '../api';
 import {
   Music, Film, Star, PlusCircle, Circle, Check, Plus,
   X, ExternalLink, RefreshCw, LogOut, Radio, List as ListIcon,
@@ -345,13 +345,12 @@ const Profile = () => {
         
         // Count movies this month
         const now = new Date();
-        const thisMonth = now.getMonth();
-        const thisYear = now.getFullYear();
+        const thisMonth = now.toISOString().slice(0, 7);
         
         const moviesThisMonth = movies.filter(movie => {
-          if (!movie.watched_date) return false;
-          const watchedDate = new Date(movie.watched_date);
-          return watchedDate.getMonth() === thisMonth && watchedDate.getFullYear() === thisYear;
+          const watchedDate = movie.watched_date || movie.date_watched || movie.watchDate;
+          if (!watchedDate) return false;
+          return watchedDate.startsWith(thisMonth);
         });
         
         setLetterboxdThisMonth(moviesThisMonth.length);
@@ -367,13 +366,12 @@ const Profile = () => {
     spotifyApi.getRecentlyPlayed(50)
       .then(res => {
         if (res.data?.items) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          const now = new Date();
+          const todayStr = now.toISOString().split('T')[0];
           
           const songsToday = res.data.items.filter(item => {
-            const playedAt = new Date(item.played_at);
-            playedAt.setHours(0, 0, 0, 0);
-            return playedAt.getTime() === today.getTime();
+            const playedAt = item.played_at?.split('T')[0];
+            return playedAt === todayStr;
           });
           
           setSpotifyTodayCount(songsToday.length);
@@ -392,7 +390,7 @@ const Profile = () => {
       .finally(() => setLoadingSpotify(false));
   }, [spotifyConnected]);
 
-  // Real-time polling for Currently Playing
+  // Real-time polling for Currently Playing - only on first load
   useEffect(() => {
     if (!spotifyConnected) return;
 
@@ -410,27 +408,12 @@ const Profile = () => {
           setCurrentlyPlaying(null);
         }
       } catch (err) {
-        if (err.response?.status === 401) {
-          console.warn("Spotify session expired (401). Attempting to refresh...");
-          // Try to refresh by making a status call
-          try {
-            await authApi.getSpotifyStatus();
-            console.log("Spotify session refreshed successfully");
-            // Retry the currently playing call
-            await fetchCurrent();
-          } catch (refreshErr) {
-            console.warn("Could not refresh Spotify session:", refreshErr);
-            setSpotifyConnected(false);
-          }
-        } else {
-          console.warn("Error polling Spotify:", err);
-        }
+        console.warn("Error fetching currently playing:", err);
       }
     };
 
+    // Solo fetch al cargar, sin polling constante
     fetchCurrent();
-    const interval = setInterval(fetchCurrent, 15000); // 15s polling
-    return () => clearInterval(interval);
   }, [spotifyConnected]);
 
   // Load My Lists & Favorites
