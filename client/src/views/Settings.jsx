@@ -80,18 +80,18 @@ const Settings = () => {
       <div className="settings-group">
         <h3 className="stat-label" style={{ marginBottom: '1rem' }}>{t('settings.language')}</h3>
         <div className="settings-card">
-          <div className="settings-row" style={{ alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
               <div className="song-name">{t('settings.language')}</div>
               <div className="song-artist">{t('settings.languageDesc')}</div>
             </div>
             
-            <div style={{ display: 'flex', gap: '0.75rem', marginLeft: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-start' }}>
               <button 
                 className={`lang-flag-btn ${i18n.language === 'es' ? 'active' : ''}`} 
                 onClick={() => changeLanguage('es')}
                 title="Español"
-                style={{ width: '44px', height: '44px' }}
+                style={{ width: '48px', height: '48px' }}
               >
                 <img src="/spain.png" alt="ES" className="flag-img" />
               </button>
@@ -99,7 +99,7 @@ const Settings = () => {
                 className={`lang-flag-btn ${i18n.language === 'en' ? 'active' : ''}`} 
                 onClick={() => changeLanguage('en')}
                 title="English"
-                style={{ width: '44px', height: '44px' }}
+                style={{ width: '48px', height: '48px' }}
               >
                 <img src="/ing.png" alt="EN" className="flag-img" />
               </button>
@@ -107,7 +107,7 @@ const Settings = () => {
                 className={`lang-flag-btn ${i18n.language === 'ca' ? 'active' : ''}`} 
                 onClick={() => changeLanguage('ca')}
                 title="Català"
-                style={{ width: '44px', height: '44px' }}
+                style={{ width: '48px', height: '48px' }}
               >
                 <img src="/cat.png" alt="CA" className="flag-img" />
               </button>
