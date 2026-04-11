@@ -4,6 +4,7 @@ export const getSpotifyAuthUrl = (state = 'login') => {
     'user-read-email',
     'user-top-read',
     'user-read-recently-played',
+    'user-read-currently-playing',
     'playlist-modify-public',
     'playlist-modify-private'
   ].join(' ');
