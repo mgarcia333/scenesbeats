@@ -339,7 +339,7 @@ body {
   flex: 1;
   margin-top: 52px;
   margin-bottom: 58px;
-  padding: 0.75rem;
+  padding: 0;
   min-height: calc(100vh - 52px - 58px);
   width: 100%;
   box-sizing: border-box;
@@ -609,9 +609,8 @@ body {
 .view-container {
   width: 100%;
   max-width: 100%;
-  padding: 0.5rem;
-  padding-bottom: 0.5rem;
-  animation: fadeIn 0.3s ease-out;
+  padding: 0 1rem;
+  padding-bottom: 1.5rem;
 }
 
 @media (min-width: 769px) {
@@ -736,7 +735,8 @@ body {
   display: flex;
   gap: 1.25rem;
   overflow-x: auto;
-  padding-bottom: 1.5rem;
+  padding: 0 1rem 1.5rem 1rem;
+  margin: 0 -1rem;
   scrollbar-width: none;
   flex-wrap: nowrap;
   scroll-behavior: smooth;
@@ -1236,7 +1236,7 @@ body {
 /* Feed Section - reusable */
 .feed-section {
   margin-top: 1.5rem;
-  padding: 0 1rem;
+  padding: 0;
 }
 
 @media (min-width: 640px) {
