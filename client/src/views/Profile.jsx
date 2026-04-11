@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import LoadingDots from '../components/LoadingDots';
 import HorizontalScroll from '../components/HorizontalScroll';
+import { MovieCard, SongCard } from '../components/Cards';
 
 /* ─────────────────────────────────────────────
    Favorite Search Modal
@@ -747,10 +748,7 @@ const Profile = () => {
           ) : (
             <HorizontalScroll>
               {recentSongs.map((song, idx) => (
-                <div key={`${song.id}-${idx}`} className="song-card" style={{ flex: '0 0 120px' }}>
-                  <img src={song.artwork} className="song-artwork" alt={song.name} style={{ width: '120px', height: '120px' }} />
-                  <div className="song-name" style={{ fontSize: '0.75rem' }}>{song.name}</div>
-                </div>
+                <SongCard key={`${song.id}-${idx}`} song={song} />
               ))}
             </HorizontalScroll>
           )}
@@ -775,10 +773,7 @@ const Profile = () => {
           ) : (
             <HorizontalScroll>
               {lbMovies.map((movie, idx) => (
-                <div key={`${movie.id}-${idx}`} className="movie-card" style={{ flex: '0 0 100px' }}>
-                  <img src={movie.poster} className="movie-artwork" alt={movie.title} style={{ width: '100px', height: '150px' }} />
-                  <div className="movie-name" style={{ fontSize: '0.75rem' }}>{movie.title}</div>
-                </div>
+                <MovieCard key={`${movie.id}-${idx}`} movie={movie} />
               ))}
             </HorizontalScroll>
           )}

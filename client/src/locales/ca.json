@@ -140,7 +140,8 @@
     "userNotFound": "Usuari no trobat",
     "publicLists": "Llistes Públiques",
     "noPublicLists": "Aquest usuari encara no té llistes públiques.",
-    "connections": "Connexions"
+    "connections": "Connexions",
+    "viewProfile": "Veure Perfil"
   },
   "settings": {
     "title": "Ajustos",

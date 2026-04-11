@@ -11,6 +11,7 @@ import {
 import HorizontalScroll from '../components/HorizontalScroll';
 import { socket } from '../App';
 import LoadingDots from '../components/LoadingDots';
+import { MovieCard, SongCard } from '../components/Cards';
 
 const UserProfile = () => {
   const { t } = useTranslation();
@@ -222,7 +223,11 @@ const UserProfile = () => {
 
       {/* ── Profile header (Mirror) ── */}
       <div className="profile-header">
-        <div className="profile-avatar-wrapper">
+        <div 
+          className="profile-avatar-wrapper" 
+          onClick={() => navigate(`/user/${id}`, { replace: true })}
+          style={{ cursor: 'pointer' }}
+        >
           <img 
             src={profileUser.avatar || `https://ui-avatars.com/api/?name=${profileUser.name}`} 
             className="profile-avatar-large" 
@@ -301,10 +306,7 @@ const UserProfile = () => {
         ) : (
           <HorizontalScroll>
             {recentSongs.map((song, idx) => (
-              <div key={`${song.id}-${idx}`} className="song-card" style={{ flex: '0 0 120px' }}>
-                <img src={song.artwork} className="song-artwork" alt={song.name} style={{ width: '120px', height: '120px' }} />
-                <div className="song-name" style={{ fontSize: '0.75rem' }}>{song.name}</div>
-              </div>
+              <SongCard key={`${song.id}-${idx}`} song={song} />
             ))}
             {recentSongs.length === 0 && <p className="text-muted small">No hay actividad reciente.</p>}
           </HorizontalScroll>
@@ -366,10 +368,7 @@ const UserProfile = () => {
           ) : (
             <HorizontalScroll>
               {lbMovies.map((movie, idx) => (
-                <div key={`${movie.id}-${idx}`} className="movie-card" style={{ flex: '0 0 100px' }}>
-                  <img src={movie.poster} className="movie-artwork" alt={movie.title} style={{ width: '100px', height: '150px' }} />
-                  <div className="movie-name" style={{ fontSize: '0.75rem' }}>{movie.title}</div>
-                </div>
+                <MovieCard key={`${movie.id}-${idx}`} movie={movie} />
               ))}
               {lbMovies.length === 0 && <p className="text-muted small">No hay actividad reciente.</p>}
             </HorizontalScroll>

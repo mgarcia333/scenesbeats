@@ -141,7 +141,8 @@
     "userNotFound": "User not found",
     "publicLists": "Public Lists",
     "noPublicLists": "This user has no public lists yet.",
-    "connections": "Connections"
+    "connections": "Connections",
+    "viewProfile": "View Profile"
   },
   "settings": {
     "title": "Settings",
