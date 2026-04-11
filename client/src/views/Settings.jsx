@@ -80,29 +80,36 @@ const Settings = () => {
       <div className="settings-group">
         <h3 className="stat-label" style={{ marginBottom: '1rem' }}>{t('settings.language')}</h3>
         <div className="settings-card">
-          <div className="settings-row">
-            <div>
+          <div className="settings-row" style={{ alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
               <div className="song-name">{t('settings.language')}</div>
               <div className="song-artist">{t('settings.languageDesc')}</div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                className={`toggle-btn ${i18n.language === 'es' ? 'active' : ''}`}
+            
+            <div style={{ display: 'flex', gap: '0.75rem', marginLeft: '1rem' }}>
+              <button 
+                className={`lang-flag-btn ${i18n.language === 'es' ? 'active' : ''}`} 
                 onClick={() => changeLanguage('es')}
+                title="Español"
+                style={{ width: '44px', height: '44px' }}
               >
-                ES
+                <img src="/spain.png" alt="ES" className="flag-img" />
               </button>
-              <button
-                className={`toggle-btn ${i18n.language === 'en' ? 'active' : ''}`}
+              <button 
+                className={`lang-flag-btn ${i18n.language === 'en' ? 'active' : ''}`} 
                 onClick={() => changeLanguage('en')}
+                title="English"
+                style={{ width: '44px', height: '44px' }}
               >
-                EN
+                <img src="/ing.png" alt="EN" className="flag-img" />
               </button>
-              <button
-                className={`toggle-btn ${i18n.language === 'ca' ? 'active' : ''}`}
+              <button 
+                className={`lang-flag-btn ${i18n.language === 'ca' ? 'active' : ''}`} 
                 onClick={() => changeLanguage('ca')}
+                title="Català"
+                style={{ width: '44px', height: '44px' }}
               >
-                CA
+                <img src="/cat.png" alt="CA" className="flag-img" />
               </button>
             </div>
           </div>
