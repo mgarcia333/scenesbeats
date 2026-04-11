@@ -81,7 +81,6 @@ export const searchMovies = async (req, res) => {
       id: movie.id,
       title: movie.title,
       year: movie.release_date?.split('-')[0] || 'N/A',
-      rating: movie.vote_average ? (movie.vote_average / 2).toFixed(1) : null,
       poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
       overview: movie.overview
     }));

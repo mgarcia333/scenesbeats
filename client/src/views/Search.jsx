@@ -48,13 +48,24 @@ const PersonCard = ({ person, t }) => (
   </div>
 );
 
-const UserSearchResultCard = ({ result, onAdd, t }) => {
+const UserSearchResultCard = ({ result, onAdd, t, isFriend, isMe }) => {
   const [sent, setSent] = useState(false);
   
   const handleAdd = async () => {
+    if (isFriend || isMe) return;
     setSent(true);
     await onAdd(result.id);
   };
+
+  const getButtonContent = () => {
+    if (isMe) return null; // Don't show button for yourself
+    if (isFriend) return <span className="friend-badge"><Check size={14} /> {t('community.friend') || 'Amigo'}</span>;
+    if (sent) return <span className="pending-badge"><Clock size={14} /> {t('community.pending') || 'Enviada'}</span>;
+    return <button onClick={handleAdd} className="add-friend-btn"><UserPlus size={14} /> {t('community.addFriend') || 'Agregar'}</button>;
+  };
+
+  const buttonContent = getButtonContent();
+  if (!buttonContent) return null;
 
   return (
     <div className="user-search-card animate-fadeIn">
@@ -68,10 +79,14 @@ const UserSearchResultCard = ({ result, onAdd, t }) => {
           <div className="user-email small">{result.email}</div>
         </div>
       </div>
-      <button className={`btn-social ${sent ? 'sent' : ''}`} onClick={handleAdd} disabled={sent}>
-        {sent ? <Check size={16} /> : <UserPlus size={16} />}
-        <span>{sent ? t('common.sent') || 'Enviado' : t('common.add') || 'Añadir'}</span>
-      </button>
+      {isFriend ? (
+        <span className="friend-badge"><Check size={14} /> {t('community.friend') || 'Amigo'}</span>
+      ) : isMe ? null : (
+        <button className={`btn-social ${sent ? 'sent' : ''}`} onClick={handleAdd} disabled={sent || isFriend}>
+          {sent ? <Check size={16} /> : <UserPlus size={16} />}
+          <span>{sent ? t('common.sent') || 'Enviado' : t('common.add') || 'Añadir'}</span>
+        </button>
+      )}
     </div>
   );
 };
@@ -117,6 +132,20 @@ const Search = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState(getRecentSearches);
+  const [myFriends, setMyFriends] = useState([]);
+
+  // Load friends on mount
+  useEffect(() => {
+    if (user?.id) {
+      socialApi.getFriends(user.id)
+        .then(res => setMyFriends(res.data || []))
+        .catch(() => setMyFriends([]));
+    }
+  }, [user?.id]);
+
+  const isFriend = (userId) => {
+    return myFriends.some(f => f.id === userId);
+  };
 
   const handleSearch = async (term = searchTerm, type = searchType) => {
     if (!term.trim()) {
@@ -273,7 +302,16 @@ const Search = () => {
               if (searchType === 'music') return <SongCard key={item.id + idx} song={item} />;
               if (searchType === 'people') return <PersonCard key={item.id + idx} person={item} t={t} />;
               if (searchType === 'artists') return <ArtistCard key={item.id + idx} artist={item} t={t} />;
-              if (searchType === 'users') return <UserSearchResultCard key={item.id + idx} result={item} onAdd={handleAddFriend} t={t} />;
+              if (searchType === 'users') return (
+                <UserSearchResultCard 
+                  key={item.id + idx} 
+                  result={item} 
+                  onAdd={handleAddFriend} 
+                  t={t}
+                  isFriend={isFriend(item.id)}
+                  isMe={user?.id === item.id}
+                />
+              );
               return null;
             })}
           </div>

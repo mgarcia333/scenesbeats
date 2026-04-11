@@ -9,6 +9,7 @@ class Favorite extends Model
     protected $fillable = [
         'user_id',
         'type',
+        'position',
         'external_id',
         'title',
         'subtitle',

@@ -36,9 +36,10 @@ export const setSpotifyCookies = (res, tokens) => {
   if (access_token) {
     res.cookie('spotify_access_token', access_token, {
       httpOnly: true,
-      maxAge: expires_in * 1000,
+      maxAge: Math.min(expires_in * 1000, 3600000),
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     });
   }
 
@@ -47,7 +48,8 @@ export const setSpotifyCookies = (res, tokens) => {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     });
   }
 };

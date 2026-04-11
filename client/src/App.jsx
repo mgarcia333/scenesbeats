@@ -28,10 +28,15 @@ export const socket = io(import.meta.env.VITE_NODE_API_URL || 'http://localhost:
 
 /**
  * PrivateRoute: redirects to /login if user is not authenticated.
+ * Returns a minimal inline loader during auth check to avoid blanking the page.
  */
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return null; // Don't flash redirect during auth check
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+      <div className="loader" style={{ width: '32px', height: '32px' }}></div>
+    </div>
+  );
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
@@ -52,8 +57,11 @@ function App() {
 
 const MainLayout = () => {
     const { isAuthenticated, loading } = useAuth();
-    
-    if (loading) {
+
+    // Always show the full chrome (Header + Navbar) if authenticated,
+    // even during re-auth checks (e.g. after Spotify OAuth redirect).
+    // Only show the full-screen loading spinner on the very first app load.
+    if (loading && !isAuthenticated) {
         return (
             <div className="loading-screen">
                 <div className="loader"></div>

@@ -22,7 +22,7 @@ const MediaDetailsModal = ({ isOpen, onClose, item, type, onAddToList }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
-              {item.rating && <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--accent-orange)' }}><Star size={16} fill="currentColor" /> {item.rating}</div>}
+              {item.rating && <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--primary-color)' }}><Star size={16} fill="currentColor" /> {item.rating}</div>}
               {item.duration && <div style={{ display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.7 }}><Clock size={16} /> {item.duration}</div>}
             </div>
 

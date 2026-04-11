@@ -411,8 +411,17 @@ const Profile = () => {
         }
       } catch (err) {
         if (err.response?.status === 401) {
-          console.warn("Spotify session expired (401). Stopping poll.");
-          setSpotifyConnected(false);
+          console.warn("Spotify session expired (401). Attempting to refresh...");
+          // Try to refresh by making a status call
+          try {
+            await authApi.getSpotifyStatus();
+            console.log("Spotify session refreshed successfully");
+            // Retry the currently playing call
+            await fetchCurrent();
+          } catch (refreshErr) {
+            console.warn("Could not refresh Spotify session:", refreshErr);
+            setSpotifyConnected(false);
+          }
         } else {
           console.warn("Error polling Spotify:", err);
         }
@@ -553,9 +562,13 @@ const Profile = () => {
 
   return (
     <div className="view-container profile-view">
-      <button className="profile-logout-btn" onClick={handleLogout} title={t('auth.logout') || 'Cerrar Sesión'}>
-        <LogOut size={20} />
-      </button>
+      {/* Header with logout button */}
+      <div className="profile-top-bar">
+        <h2 className="profile-title-mobile">Mi Perfil</h2>
+        <button className="profile-logout-btn" onClick={handleLogout} title={t('auth.logout') || 'Cerrar Sesión'}>
+          <LogOut size={18} />
+        </button>
+      </div>
 
       {/* ── Profile header ── */}
       <div className="profile-header">
@@ -570,36 +583,24 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Now Playing - visible when something is playing */}
-        {currentlyPlaying && (
-          <div className="now-playing-bar animate-fadeIn">
-            <Music size={16} className="np-icon" />
-            <div className="np-track-info">
-              <span className="np-track-name">{currentlyPlaying.name}</span>
-              <span className="np-artist-name">{currentlyPlaying.artist}</span>
-            </div>
-          </div>
-        )}
-
         {/* Info */}
         <div className="profile-info-main">
           <h2 className="profile-name-large">{user?.name}</h2>
-          <p className="hero-subtitle" style={{ marginBottom: '0.5rem' }}>{user?.email}</p>
 
           {/* Stats con counts dinámicos */}
           <div className="profile-stats">
             <div className="stat-item highlight">
-              <Flame size={16} className="stat-icon" />
+              <Flame size={14} className="stat-icon" />
               <div className="stat-content">
                 <span className="stat-value">{spotifyTodayCount}</span>
-                <span className="stat-label">canciones hoy</span>
+                <span className="stat-label">hoy</span>
               </div>
             </div>
             <div className="stat-item highlight">
-              <Film size={16} className="stat-icon" />
+              <Film size={14} className="stat-icon" />
               <div className="stat-content">
                 <span className="stat-value">{letterboxdThisMonth}</span>
-                <span className="stat-label">películas este mes</span>
+                <span className="stat-label">mes</span>
               </div>
             </div>
             <div className="stat-item">
@@ -618,11 +619,10 @@ const Profile = () => {
                 style={{ cursor: conn.onClick ? 'pointer' : 'default' }}
                 title={conn.connected ? `${conn.name} conectado` : `Conectar ${conn.name}`}
               >
-                <span className={`icon-${conn.id}`}>{conn.icon}</span>
-                {conn.name}
+                {conn.icon}
                 {conn.connected
-                  ? <Check size={13} style={{ marginLeft: '4px', color: 'var(--primary-color)' }} />
-                  : <Plus size={13} style={{ marginLeft: '4px', opacity: 0.6 }} />}
+                  ? <Check size={12} />
+                  : <Plus size={12} />}
               </div>
             ))}
           </div>
@@ -636,8 +636,19 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Now Playing - visible when something is playing */}
+      {currentlyPlaying && (
+        <div className="now-playing-bar" style={{ animation: 'none' }}>
+          <Music size={16} className="np-icon" />
+          <div className="np-track-info">
+            <span className="np-track-name">{currentlyPlaying.name}</span>
+            <span className="np-artist-name">{currentlyPlaying.artist}</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Gustos (Favorites) ── */}
-      <section className="feed-section" style={{ marginTop: '2rem' }}>
+      <section className="feed-section">
         <h2 className="section-title">{t('profile.myTastes')}</h2>
         <div className="gustos-container">
           <GustoSection title={t('profile.movies')} type="movie_fav" icon={Film} />
@@ -654,7 +665,7 @@ const Profile = () => {
       </section>
 
       {/* ── Friends Section ── */}
-      <section className="feed-section" style={{ marginTop: '2.5rem' }}>
+      <section className="feed-section">
         <h2 className="section-title">{t('profile.friends')} ({friends.length})</h2>
         {friends.length > 0 ? (
           <HorizontalScroll>
@@ -676,7 +687,7 @@ const Profile = () => {
       </section>
 
       {/* ── My Lists ── */}
-      <section className="feed-section" style={{ marginTop: '2.5rem' }}>
+      <section className="feed-section">
         <h2 className="section-title">{t('profile.myLists')}</h2>
         <HorizontalScroll>
           <div
@@ -705,7 +716,7 @@ const Profile = () => {
       </section>
 
       {/* ── External Integrations ── */}
-      <div className="integrations-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '3rem' }}>
+      <div className="integrations-row">
         
         {/* ── My Music (Spotify) ── */}
         <section className="feed-section">

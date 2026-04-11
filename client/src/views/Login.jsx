@@ -85,30 +85,7 @@ const Login = () => {
     }
   };
 
-  const backgrounds = [
-    '/fondos/fondo1.gif',
-    '/fondos/fondo2.gif',
-    '/fondos/fondo3.gif',
-    '/fondos/fondo4.gif',
-  ];
-
-  const [currentBg, setCurrentBg] = useState(0);
-  const [nextBg, setNextBg] = useState(1);
-  const [isFading, setIsFading] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsFading(true);
-      // After transition completes (2s in CSS), set the next image as current
-      setTimeout(() => {
-        setCurrentBg(nextBg);
-        setNextBg((prev) => (prev + 1) % backgrounds.length);
-        setIsFading(false);
-      }, 2000);
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [nextBg, backgrounds.length]);
+  const bg = '/fondos/fondo1.gif';
 
   return (
     <div className="landing-container">
@@ -116,14 +93,9 @@ const Login = () => {
       <div className="landing-bg-container">
         <div 
           className="landing-bg-layer active" 
-          style={{ backgroundImage: `url(${backgrounds[currentBg]})` }} 
-        />
-        <div 
-          className={`landing-bg-layer ${isFading ? 'active' : ''}`} 
-          style={{ backgroundImage: `url(${backgrounds[nextBg]})`, zIndex: isFading ? 1 : 0 }} 
+          style={{ backgroundImage: `url(${bg})` }} 
         />
         <div className="bg-gradient-overlay" />
-        <div className="bg-mesh" />
       </div>
 
       <div className="landing-content animate-fadeIn">

@@ -57,16 +57,18 @@ export const spotifyCallback = async (req, res) => {
     // Set Spotify cookies (httpOnly, so JS can't read them — server reads them)
     res.cookie('spotify_access_token', access_token, {
       httpOnly: true,
-      maxAge: expires_in * 1000,
+      maxAge: Math.min(expires_in * 1000, 3600000),
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     });
 
     res.cookie('spotify_refresh_token', refresh_token, {
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     });
 
     // Redirect based on state: 'connect' goes back to profile, 'login' goes to home

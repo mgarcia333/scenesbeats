@@ -12,27 +12,69 @@ const Recommendations = () => {
   const [recommendation, setRecommendation] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [mode, setMode] = useState('movie_from_music');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const getRecommendation = async () => {
+    if (isGenerating) return;
+    
     setLoadingRec(true);
     setErrorMsg("");
     setRecommendation(null);
+    setIsGenerating(true);
 
     let lb_username = user?.letterboxd_username;
-    let fav_movies = [];
-    let fav_songs = [];
+    const allFavorites = {
+      movies: [],
+      songs: [],
+      albums: [],
+      artists: [],
+      actors: [],
+      directors: []
+    };
 
     try {
       if (user && user.id) {
         const favRes = await favoritesApi.getAll(user.id);
-        fav_movies = favRes.data.filter(f => f.type === 'movie');
-        fav_songs = favRes.data.filter(f => f.type === 'song');
+        const favs = favRes.data || [];
+        
+        allFavorites.movies = favs.filter(f => f.type === 'movie_fav').map(m => ({ 
+          title: m.title, 
+          subtitle: m.subtitle,
+          image_url: m.image_url 
+        }));
+        allFavorites.songs = favs.filter(f => f.type === 'song_fav').map(s => ({ 
+          title: s.title, 
+          subtitle: s.subtitle,
+          image_url: s.image_url 
+        }));
+        allFavorites.albums = favs.filter(f => f.type === 'album_fav').map(a => ({ 
+          title: a.title, 
+          subtitle: a.subtitle,
+          image_url: a.image_url 
+        }));
+        allFavorites.artists = favs.filter(f => f.type === 'artist_fav').map(a => ({ 
+          title: a.title, 
+          subtitle: a.subtitle,
+          image_url: a.image_url 
+        }));
+        allFavorites.actors = favs.filter(f => f.type === 'actor_fav').map(a => ({ 
+          title: a.title, 
+          subtitle: a.subtitle,
+          image_url: a.image_url 
+        }));
+        allFavorites.directors = favs.filter(f => f.type === 'director_fav').map(d => ({ 
+          title: d.title, 
+          subtitle: d.subtitle,
+          image_url: d.image_url 
+        }));
+
+        console.log('All favorites loaded:', allFavorites);
       }
     } catch (e) {
-      console.warn("Favs fetch failed");
+      console.warn("Favs fetch failed:", e);
     }
 
-    if ((mode === 'movie_from_movies' || mode === 'song_from_movies' || mode === 'hybrid') && !lb_username) {
+    if ((mode === 'movie_from_movies' || mode === 'song_from_movies' || mode === 'hybrid') && !lb_username && allFavorites.movies.length === 0) {
       setErrorMsg(t('rec.errorLB'));
       setLoadingRec(false);
       return;
@@ -42,8 +84,7 @@ const Recommendations = () => {
       const res = await recommendationApi.generate({
         mode,
         lb_username,
-        fav_movies: fav_movies.map(m => ({ title: m.title })),
-        fav_songs: fav_songs.map(s => ({ title: s.name || s.title })),
+        all_favorites: allFavorites,
         lang: i18n.language,
         userId: user?.id
       });
@@ -52,6 +93,7 @@ const Recommendations = () => {
       setErrorMsg(err.response?.data?.error || t('rec.errorGeneral'));
     } finally {
       setLoadingRec(false);
+      setIsGenerating(false);
     }
   };
 
@@ -64,13 +106,13 @@ const Recommendations = () => {
           <p className="rec-subtitle-main">{t('rec.subtitle')}</p>
         </div>
 
-        {/* Mode Selection Grid */}
+        {/* Mode Selection Grid with Button */}
         <div className="rec-modes-grid animate-fadeIn">
           <div 
             className={`rec-mode-card ${mode === 'movie_from_music' ? 'active' : ''}`}
             onClick={() => setMode('movie_from_music')}
           >
-            <div className="mode-icon-box"><Music4 size={24} /></div>
+            <div className="mode-icon-box"><Music4 size={22} /></div>
             <div className="mode-info">
               <h4>{t('rec.modeMovieFromMusic')}</h4>
               <p>{t('rec.modeMovieFromMusicDesc')}</p>
@@ -81,7 +123,7 @@ const Recommendations = () => {
             className={`rec-mode-card ${mode === 'song_from_movies' ? 'active' : ''}`}
             onClick={() => setMode('song_from_movies')}
           >
-            <div className="mode-icon-box"><Clapperboard size={24} /></div>
+            <div className="mode-icon-box"><Clapperboard size={22} /></div>
             <div className="mode-info">
               <h4>{t('rec.modeSongFromMovies')}</h4>
               <p>{t('rec.modeSongFromMoviesDesc')}</p>
@@ -92,23 +134,24 @@ const Recommendations = () => {
             className={`rec-mode-card ${mode === 'hybrid' ? 'active' : ''}`}
             onClick={() => setMode('hybrid')}
           >
-            <div className="mode-icon-box"><Compass size={24} /></div>
+            <div className="mode-icon-box"><Compass size={22} /></div>
             <div className="mode-info">
               <h4>{t('rec.modeHybridFull')}</h4>
               <p>{t('rec.modeHybridFullDesc')}</p>
             </div>
           </div>
-        </div>
 
-        {/* Action Area */}
-        {!recommendation && !loadingRec && (
-          <div className="rec-hero-action animate-fadeIn">
-            <button onClick={getRecommendation} className="btn-generate-premium">
-              <Sparkles size={20} />
+          {!recommendation && !loadingRec && (
+            <button 
+              onClick={getRecommendation} 
+              className="rec-mode-btn-generate"
+              disabled={isGenerating}
+            >
+              <Sparkles size={16} />
               {t('rec.getBtn')}
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Loading State */}
         {loadingRec && (

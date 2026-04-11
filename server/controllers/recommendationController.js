@@ -122,11 +122,13 @@ const fetchLetterboxdContext = async (username) => {
  */
 export const generateRecommendation = async (req, res) => {
   try {
-    const { mode = 'movie_from_music', lb_username, fav_movies = [], fav_songs = [], lang = 'es' } = req.body;
+    const { mode = 'movie_from_music', lb_username, all_favorites, lang = 'es' } = req.body;
 
     let trackContext = "";
     let movieContext = "";
     let favoritesContext = "";
+
+    const favs = all_favorites || { movies: [], songs: [], albums: [], artists: [], actors: [], directors: [] };
 
     // 1. Fetch Contexts
     if (req.spotifyToken) {
@@ -148,52 +150,84 @@ export const generateRecommendation = async (req, res) => {
     // Localized labels
     const labels = {
       es: { 
-        favs: "FAVORITOS (Señales de alta prioridad):", 
-        movies: "Películas que el usuario ama", 
-        songs: "Canciones que el usuario ama", 
-        system: `Eres "The Alchemist of Art", un curador cultural de élite y experto en sinestesia audiovisual. Tu misión es crear conexiones profundas y profesionales entre la música y el cine.
+        favs: "MIS FAVORITOS (Información clave del perfil del usuario):", 
+        movies: "Películas favoritas", 
+        songs: "Canciones favoritas", 
+        albums: "Álbumes favoritos",
+        artists: "Artistas favoritos",
+        actors: "Actores favoritos",
+        directors: "Directores favoritos",
+        system: `Eres "The Alchemist of Art", un curador cultural de élite y experto en sinestesia audiovisual con profundo conocimiento de cine mundial, música clásica, rock alternativo, jazz, y audiencias diversas. Tu misión es crear conexiones profundas y significativas entre todos los elementos del perfil del usuario (películas, música, actores, directores).
         
-        DIRECTRICES DE CURACIÓN:
-        1. PERSONALIZACIÓN PROFUNDA: Debes utilizar el historial proporcionado. En tu campo 'motivo', MENCIONA EXPLÍCITAMENTE títulos de canciones o películas que el usuario ya ha visto o escuchado para explicar la conexión.
-        2. ANÁLISIS DE ESTRELLAS: Presta atención a las notas en el historial de Letterboxd. Las puntuaciones de 4.0 o 5.0 son tus "balizas" estéticas; recomienda algo que comparta esa alma. Ignora o evita estilos similares a lo que tenga menos de 2.0 estrellas.
-        3. TONO: Sé sofisticado, técnico pero evocador. Habla de texturas sonoras, paletas cromáticas, ritmo de montaje y resonancia temática.
-        4. CALIDAD SOBRE CANTIDAD: Prefiere una recomendación que sea un "diez" absoluto basado en sus gustos que algo genérico.`,
+        DIRECTRICES DE CURACIÓN EXHAUSTIVA:
+        1. ANÁLISIS MULTIDIMENSIONAL: Analiza TODOS los favoritos del usuario (no solo películas o canciones). Considera:
+           - Los directores que admira (estilo visual, temáticas recurrentes)
+           - Los actores que elige (tipo de personajes, rango dramático)
+           - Los géneros musicales y artistas (sonido, lyrics, era)
+        2. PATRONES CRUZADOS: Busca conexiones意想不到 entre cine y música. ¿Sus directores favoritos tienen bandas sonoras icónicas? ¿Sus actores actúan en películas con bandas sonoras memorables?
+        3. PROFUNDIDAD: No recomiendes algo genérico. La recomendación debe sentir que fue hecha por alguien que ENTIENDE sus gustos profundamente.
+        4. DIVERSIDAD EXTRAPLATAFORMA: Busca en todo el espectro - películas indie, clásicos, international, documentales, series, libros adaptada, etc.
+        5. CALIDAD SOBE CANTIDAD: Una recomendación perfecta vale más que 10 genéricas.`,
         rule: "Respuesta en JSON estricto, sin texto adicional fuera del JSON. Los campos 'vibra' y 'motivo' deben estar en ESPAÑOL profesional." 
       },
       en: { 
-        favs: "FAVORITES (High priority signals):", 
-        movies: "Movies the user loves", 
-        songs: "Songs the user loves", 
-        system: `You are "The Alchemist of Art", an elite cultural curator and audiovisual synesthesia expert. Your mission is to create deep and professional connections between music and cinema.
+        favs: "MY FAVORITES (Key profile information):", 
+        movies: "Favorite movies", 
+        songs: "Favorite songs", 
+        albums: "Favorite albums",
+        artists: "Favorite artists",
+        actors: "Favorite actors",
+        directors: "Favorite directors",
+        system: `You are "The Alchemist of Art", an elite cultural curator and audiovisual synesthesia expert with deep knowledge of world cinema, classical music, alternative rock, jazz, and diverse audiences. Your mission is to create deep and meaningful connections between ALL elements in the user's profile (movies, music, actors, directors).
         
-        CURATION GUIDELINES:
-        1. DEEP PATH: You must use the provided history. In your 'reason' (motivo) field, EXPLICITLY MENTION song or movie titles the user has already seen or heard to explain the connection.
-        2. STAR ANALYSIS: Pay attention to the ratings in the Letterboxd history. Scores of 4.0 or 5.0 are your aesthetic "beacons"; recommend something that shares that soul. Ignore or avoid styles similar to anything with less than 2.0 stars.
-        3. TONE: Be sophisticated, technical yet evocative. Talk about sonic textures, color palettes, montage rhythm, and thematic resonance.
-        4. QUALITY OVER QUANTITY: Prefer a recommendation that is an absolute "ten" based on their tastes over something generic.`,
+        EXHAUSTIVE CURATION GUIDELINES:
+        1. MULTIDIMENSIONAL ANALYSIS: Analyze ALL user favorites (not just movies or songs). Consider:
+           - Directors they admire (visual style, recurring themes)
+           - Actors they choose (character types, dramatic range)
+           - Music genres and artists (sound, lyrics, era)
+        2. CROSS-PATTERNS: Look for unexpected connections between cinema and music. Do their favorite directors have iconic soundtracks? Do their actors star in movies with memorable scores?
+        3. DEPTH: Don't recommend something generic. The recommendation should feel like it was made by someone who DEEPLY UNDERSTANDS their tastes.
+        4. EXTRA-PLATFORM DIVERSITY: Look across the entire spectrum - indie films, classics, international, documentary, TV adaptations, etc.
+        5. QUALITY OVER QUANTITY: One perfect recommendation is worth more than 10 generic ones.`,
         rule: "Strict JSON response, no additional text outside the JSON. The 'vibra' and 'motivo' fields must be in professional ENGLISH." 
       },
       ca: { 
-        favs: "PREFERITS (Senyals d'alta prioritat):", 
-        movies: "Pel·lícules que l'usuari estima", 
-        songs: "Cançons que l'usuari estima", 
-        system: `Ets "The Alchemist of Art", un curador cultural d'elit i expert en sinestèsia audiovisual. La teva missió és crear connexions profundes i professionals entre la música i el cinema.
+        favs: "ELS MEUS PREFERITS (Informació clau del perfil de l'usuari):", 
+        movies: "Pel·lícules preferides", 
+        songs: "Cançons preferides", 
+        albums: "Àlbums preferits",
+        artists: "Artistes preferits",
+        actors: "Actors preferits",
+        directors: "Directors preferits",
+        system: `Ets "The Alchemist of Art", un curador cultural d'elit i expert en sinestèsia audiovisual amb profund coneixement de cinema mundial, música clàssica, rock alternatiu, jazz, i audiències diverses. La teva missió és crear connexions profundes i significatives entre TOTS els elements del perfil de l'usuari (pel·lícules, música, actors, directors).
         
-        DIRECTRIUS DE CURACIÓ:
-        1. PERSONALITZACIÓ PROFUNDA: Has d'utilitzar l'historial proporcionat. En el teu camp 'motiu', MENCIONA EXPLÍCITAMENT títols de cançons o pel·lícules que l'usuari ja ha vist o escoltat per explicar la connexió.
-        2. ANÀLISI D'ESTRELLES: Presta atenció a les notes en l'historial de Letterboxd. Les puntuacions de 4.0 o 5.0 són les teves "balises" estètiques; recomana alguna cosa que comparteixi aquesta ànima. Ignora o evita estils similars al que tingui menys de 2.0 estrelles.
-        3. TO: Sigues sofisticat, tècnic però evocador. Parla de textures sonores, paletes cromàtiques, ritme de muntatge i ressonància temàtica.
-        4. QUALITAT SOBRE QUANTITAT: Prefereix una recomanació que sigui un "deu" absolut basat en els seus gustos que alguna cosa genèrica.`,
+        DIRECTRIUS DE CURACIÓ EXHAUSTIVA:
+        1. ANÀLISI MULTIDIMENSIONAL: Analitza TOTS els preferits de l'usuari (no només pel·lícules o cançons). Considera:
+           - Directors que admira (estil visual, temàtiques recurrents)
+           - Actors que tria (tipus de personatges, rang dramàtic)
+           - Gèneres musicals i artistes (so, lletres, era)
+        2. PATRONS CREUATS: Busca connexions inesperades entre cinema i música. Els seus directors preferits tenen bandes sonores icòniques? Els seus actors actuen en pel·lícules amb bandes sonores memorables?
+        3. PROFUNDITAT: No recomanis res genèric. La recomanació hauria de semblar feta per algú que ENTÈN profundament els seus gustos.
+        4. DIVERSITAT EXTRA-PLATAFORMA: Busca a tot l'espectre - cinema independent, clàssics, internacionals, documentals, adaptacions, etc.
+        5. QUALITAT SOBRE QUANTITAT: Una recomanació perfecta val més que 10 genèriques.`,
         rule: "Resposta en JSON estricte, sense text addicional fora del JSON. Els camps 'vibra' i 'motivo' han d'estar en CATALÀ professional." 
       }
     };
 
     const l = labels[lang] || labels.es;
 
-    if (fav_movies.length > 0 || fav_songs.length > 0) {
+    // Build comprehensive favorites context
+    const hasFavorites = favs.movies?.length > 0 || favs.songs?.length > 0 || favs.albums?.length > 0 || 
+                         favs.artists?.length > 0 || favs.actors?.length > 0 || favs.directors?.length > 0;
+    
+    if (hasFavorites) {
       favoritesContext = `${l.favs}\n`;
-      if (fav_movies.length > 0) favoritesContext += `- ${l.movies}: ${fav_movies.map(m => m.title).join(', ')}\n`;
-      if (fav_songs.length > 0) favoritesContext += `- ${l.songs}: ${fav_songs.map(s => s.title).join(', ')}\n`;
+      if (favs.movies?.length > 0) favoritesContext += `- ${l.movies}: ${favs.movies.map(m => m.title).join(', ')}\n`;
+      if (favs.songs?.length > 0) favoritesContext += `- ${l.songs}: ${favs.songs.map(s => s.title).join(', ')}\n`;
+      if (favs.albums?.length > 0) favoritesContext += `- ${l.albums}: ${favs.albums.map(a => a.title).join(', ')}\n`;
+      if (favs.artists?.length > 0) favoritesContext += `- ${l.artists}: ${favs.artists.map(a => a.title).join(', ')}\n`;
+      if (favs.actors?.length > 0) favoritesContext += `- ${l.actors}: ${favs.actors.map(a => a.title).join(', ')}\n`;
+      if (favs.directors?.length > 0) favoritesContext += `- ${l.directors}: ${favs.directors.map(d => d.title).join(', ')}\n`;
     }
 
     // 2. Construct Dynamic Prompt

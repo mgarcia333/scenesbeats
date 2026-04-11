@@ -16,8 +16,8 @@ export const AuthProvider = ({ children }) => {
    * 3. If no → check localStorage for a Google-authenticated user
    * 4. In both cases, also check Spotify status separately for the "connect" badge
    */
-  const initAuth = useCallback(async () => {
-    setLoading(true);
+  const initAuth = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       // Try Spotify session first (most reliable — server-side cookies)
       const meRes = await authApi.getCurrentUser();
@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setSpotifyConnected(true);
         localStorage.setItem('user', JSON.stringify(userData));
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
     } catch {
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export const AuthProvider = ({ children }) => {
       connectLetterboxd,
       connectSpotify,
       updateUser,
-      refreshAuth: initAuth,
+      refreshAuth: () => initAuth(true), // silent=true: no muestra loading screen
     }}>
       {children}
     </AuthContext.Provider>

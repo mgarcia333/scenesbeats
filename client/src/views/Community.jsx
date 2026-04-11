@@ -51,9 +51,24 @@ const ActivityCard = ({ activity }) => {
   return (
     <div className="activity-card animate-fadeIn">
       <div className="activity-header">
-        <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`} alt="" className="user-avatar-sm" />
+        <img 
+          src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`} 
+          alt="" 
+          className="user-avatar-sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            window.location.href = `/user/${user.id}`;
+          }}
+          style={{ cursor: 'pointer' }}
+        />
         <div className="activity-info">
-          <div className="activity-user">{user.name}</div>
+          <div 
+            className="activity-user"
+            onClick={() => window.location.href = `/user/${user.id}`}
+            style={{ cursor: 'pointer' }}
+          >
+            {user.name}
+          </div>
           <div className="activity-time"><Clock size={12} /> {date}</div>
         </div>
       </div>
@@ -177,34 +192,7 @@ const Community = () => {
         </div>
 
         <div className="community-sidebar">
-          {pendingRequests.length > 0 && (
-            <div className="sidebar-section">
-              <h2 className="section-title">{t('community.requests')}</h2>
-              <div className="requests-list">
-                {pendingRequests.map(req => (
-                  <div key={req.id} className="request-card">
-                    <img 
-                      src={req.sender.avatar || `https://ui-avatars.com/api/?name=${req.sender.name}`} 
-                      className="user-avatar-sm" 
-                      alt="" 
-                    />
-                    <div className="request-info">
-                      <div className="request-name">{req.sender.name}</div>
-                      <div className="request-actions">
-                        <button className="btn-icon accept" onClick={() => handleRequestAction(req.id, 'accepted')}>
-                          <Check size={14} />
-                        </button>
-                        <button className="btn-icon reject" onClick={() => handleRequestAction(req.id, 'rejected')}>
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+          {/* Friends First - at top of sidebar */}
           <div className="sidebar-section">
             <h2 className="section-title">{t('common.friends')}</h2>
             <div className="sidebar-friends-list">
@@ -215,9 +203,11 @@ const Community = () => {
                       <img 
                         src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} 
                         className="user-avatar-sm" 
-                        alt="" 
+                        alt=""
+                        onClick={() => navigate(`/user/${friend.id}`)}
+                        style={{ cursor: 'pointer' }}
                       />
-                      <span className="friend-name">{friend.name}</span>
+                      <span className="friend-name" onClick={() => navigate(`/user/${friend.id}`)} style={{ cursor: 'pointer' }}>{friend.name}</span>
                     </div>
                     <button 
                       className="chat-link-btn" 
@@ -234,6 +224,36 @@ const Community = () => {
             </div>
           </div>
 
+          {pendingRequests.length > 0 && (
+            <div className="sidebar-section">
+              <h2 className="section-title">{t('community.requests')}</h2>
+              <div className="requests-list">
+                {pendingRequests.map(req => (
+                  <div key={req.id} className="request-card">
+                    <img 
+                      src={req.sender.avatar || `https://ui-avatars.com/api/?name=${req.sender.name}`} 
+                      className="user-avatar-sm" 
+                      alt=""
+                      onClick={() => navigate(`/user/${req.sender.id}`)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <div className="request-info">
+                      <div className="request-name" onClick={() => navigate(`/user/${req.sender.id}`)} style={{ cursor: 'pointer' }}>{req.sender.name}</div>
+                      <div className="request-actions">
+                        <button className="btn-icon accept" onClick={() => handleRequestAction(req.id, 'accepted')}>
+                          <Check size={14} />
+                        </button>
+                        <button className="btn-icon reject" onClick={() => handleRequestAction(req.id, 'rejected')}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="sidebar-section">
             <h2 className="section-title">{t('community.suggestions')}</h2>
             <div className="suggestions-list">
@@ -244,9 +264,11 @@ const Community = () => {
                       <img 
                         src={person.avatar || `https://ui-avatars.com/api/?name=${person.name}`} 
                         className="user-avatar-sm" 
-                        alt="" 
+                        alt=""
+                        onClick={() => navigate(`/user/${person.id}`)}
+                        style={{ cursor: 'pointer' }}
                       />
-                      <span className="friend-name">{person.name}</span>
+                      <span className="friend-name" onClick={() => navigate(`/user/${person.id}`)} style={{ cursor: 'pointer' }}>{person.name}</span>
                     </div>
                     <button 
                       className="chat-link-btn" 
