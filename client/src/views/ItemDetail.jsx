@@ -49,9 +49,9 @@ const ItemDetail = ({ type }) => {
   if (error || !item) {
     return (
       <div className="view-container flex-center text-center">
-        <p className="stat-label">{error || 'Ítem no encontrado'}</p>
+        <p className="stat-label">{error || t('search.itemNotFound')}</p>
         <button className="rec-button mt-4" onClick={() => navigate(-1)}>
-          {t('common.back') || 'Volver'}
+          {t('common.back')}
         </button>
       </div>
     );
@@ -84,7 +84,7 @@ const ItemDetail = ({ type }) => {
             )}
             <div className="detail-type-badge">
               {isMovie ? <Film size={14} /> : <Music size={14} />}
-              <span>{isMovie ? 'Película' : 'Canción'}</span>
+              <span>{isMovie ? t('common.movie') : t('common.music')}</span>
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ const ItemDetail = ({ type }) => {
           <div className="detail-actions">
             <button className="btn-primary-solid w-full" onClick={() => setShowAddModal(true)}>
               <Plus size={20} />
-              {t('common.addToList') || 'Añadir a lista'}
+              {t('common.addToList')}
             </button>
             
             {item.external_url && (
@@ -124,7 +124,7 @@ const ItemDetail = ({ type }) => {
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textDecoration: 'none' }}
               >
                 <ExternalLink size={18} />
-                {isMovie ? 'Ver en Letterboxd' : 'Abrir en Spotify'}
+                {isMovie ? t('common.viewOnLB') : t('common.openSpotify')}
               </a>
             )}
           </div>
@@ -132,10 +132,10 @@ const ItemDetail = ({ type }) => {
           <div className="detail-description">
             <h3 className="detail-section-label">
               <Info size={16} /> 
-              {t('common.summary') || 'Resumen'}
+              {t('common.summary')}
             </h3>
             <p className="detail-text">
-              {item.overview || item.tagline || (isMovie ? 'Sin descripción disponible.' : `Canción del álbum "${item.album}".`)}
+              {item.overview || item.tagline || (isMovie ? t('detail.noDescription') : t('detail.songFromAlbum', { album: item.album }))}
             </p>
           </div>
 

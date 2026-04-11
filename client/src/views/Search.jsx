@@ -22,7 +22,7 @@ const PersonCard = ({ person }) => (
     <div className="person-info">
       <div className="person-name">{person.name}</div>
       <div className="person-role">{person.role}</div>
-      {person.known_for && <div className="person-known small">Conocido por: {person.known_for}</div>}
+      {person.known_for && <div className="person-known small">{t('search.knownFor')}: {person.known_for}</div>}
     </div>
   </div>
 );
@@ -49,7 +49,7 @@ const UserSearchResultCard = ({ result, onAdd }) => {
       </div>
       <button className={`btn-social ${sent ? 'sent' : ''}`} onClick={handleAdd} disabled={sent}>
         {sent ? <Check size={16} /> : <UserPlus size={16} />}
-        <span>{sent ? 'Enviado' : 'Añadir'}</span>
+        <span>{sent ? t('common.sent') || 'Enviado' : t('common.add') || 'Añadir'}</span>
       </button>
     </div>
   );
@@ -66,7 +66,7 @@ const ArtistCard = ({ artist }) => (
     </div>
     <div className="person-info">
       <div className="person-name">{artist.name}</div>
-      <div className="person-role">{artist.genres || 'Músico'}</div>
+      <div className="person-role">{artist.genres || t('search.musician')}</div>
     </div>
   </div>
 );
@@ -165,19 +165,19 @@ const Search = () => {
         <div className="search-tabs-scroll">
           <div className="search-tabs">
             <button className={`search-tab ${searchType === 'movies' ? 'active' : ''}`} onClick={() => setSearchType('movies')}>
-              <Clapperboard size={16} /> Películas
+              <Clapperboard size={16} /> {t('search.movies')}
             </button>
             <button className={`search-tab ${searchType === 'music' ? 'active' : ''}`} onClick={() => setSearchType('music')}>
-              <Music size={16} /> Música
+              <Music size={16} /> {t('search.music')}
             </button>
             <button className={`search-tab ${searchType === 'people' ? 'active' : ''}`} onClick={() => setSearchType('people')}>
-              <Star size={16} /> Gente
+              <Star size={16} /> {t('search.people')}
             </button>
             <button className={`search-tab ${searchType === 'artists' ? 'active' : ''}`} onClick={() => setSearchType('artists')}>
-              <Users size={16} /> Artistas
+              <Users size={16} /> {t('search.artists')}
             </button>
             <button className={`search-tab ${searchType === 'users' ? 'active' : ''}`} onClick={() => setSearchType('users')}>
-              <User size={16} /> Usuarios
+              <User size={16} /> {t('search.users')}
             </button>
           </div>
         </div>
@@ -201,12 +201,12 @@ const Search = () => {
             })}
           </div>
         ) : searchTerm ? (
-          <div className="empty-state">No se encontró nada para "{searchTerm}"</div>
+          <div className="empty-state">{t('search.noResults', { query: searchTerm })}</div>
         ) : (
           <div className="search-placeholder-full">
             <SearchIcon size={64} style={{ opacity: 0.1, marginBottom: '2rem' }} />
-            <h2>Explora ScenesBeats</h2>
-            <p className="text-muted">Busca películas, música, creadores o a tus amigos.</p>
+            <h2>{t('search.exploreTitle')}</h2>
+            <p className="text-muted">{t('search.exploreSubtitle')}</p>
           </div>
         )}
       </div>

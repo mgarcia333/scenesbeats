@@ -35,7 +35,7 @@ const ItemCard = ({ item, canEdit, onRemove }) => {
           {isMovie ? <Film size={10} /> : <Music size={10} />}
         </span>
         {canEdit && (
-          <button className="lv-item-remove" onClick={handleRemove} disabled={removing} title="Quitar">
+          <button className="lv-item-remove" onClick={handleRemove} disabled={removing} title={t('lists.removeItem')}>
             {removing ? <LoadingDots className="mini-loader" /> : <X size={12} />}
           </button>
         )}
@@ -442,7 +442,7 @@ const ListView = () => {
           </button>
         )}
         {isOwner && (
-          <button className="lv-prime-btn secondary" onClick={handleDeleteList} disabled={deleting} title="Eliminar">
+          <button className="lv-prime-btn secondary" onClick={handleDeleteList} disabled={deleting} title={t('common.delete')}>
             <Trash2 size={18} />
           </button>
         )}
@@ -466,7 +466,7 @@ const ListView = () => {
           <div className={`lv-export-msg ${exportMsg.type}`} style={{ marginBottom: '2rem' }}>
             {exportMsg.type === 'success' ? <Check size={16} /> : <X size={16} />}
             <span>{exportMsg.text}</span>
-            {exportMsg.url && <a href={exportMsg.url} target="_blank" className="lv-spotify-link"><ExternalLink size={14} /> Abrir</a>}
+            {exportMsg.url && <a href={exportMsg.url} target="_blank" className="lv-spotify-link" rel="noreferrer"><ExternalLink size={14} /> {t('common.open')}</a>}
           </div>
         )}
 

@@ -76,10 +76,10 @@ const Login = () => {
       if (result.status === 'success') {
         navigate('/', { replace: true });
       } else {
-        setError(result.message || 'Error al iniciar sesión.');
+        setError(result.message || t('auth.errorLogin'));
       }
     } catch (err) {
-      setError('Credenciales incorrectas. Por favor, revisa tus datos.');
+      setError(t('auth.errorCredentials'));
     } finally {
       setLoading(false);
     }

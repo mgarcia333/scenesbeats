@@ -54,7 +54,7 @@ const Recommendations = () => {
       const status = err.response?.status;
       const serverMsg = err.response?.data?.error;
       if (status === 503) {
-        setErrorMsg(serverMsg || 'La IA está saturada ahora mismo. Espera unos segundos e inténtalo de nuevo.');
+        setErrorMsg(serverMsg || t('rec.errorBusy'));
       } else if (status === 401) {
         setErrorMsg(t('rec.errorSpotify'));
       } else {
@@ -70,7 +70,7 @@ const Recommendations = () => {
       {/* Header Section */}
       <div className="rec-header">
         <h2 className="section-title">{t('rec.title')}</h2>
-        <p className="rec-subtitle">Deja que la IA analice tu vibra musical y cinéfila para descubrir tu próxima obsesión.</p>
+        <p className="rec-subtitle">{t('rec.subtitle')}</p>
       </div>
 
       {/* Mode Selection Cards */}
@@ -82,7 +82,7 @@ const Recommendations = () => {
           <div className="mode-card-icon"><Film size={24} /></div>
           <div className="mode-card-info">
             <h4>{t('rec.modeMovieFromMusic')}</h4>
-            <p>Tu cine ideal basado en lo que escuchas hoy.</p>
+            <p>{t('rec.modeMovieFromMusicDesc')}</p>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ const Recommendations = () => {
           <div className="mode-card-icon"><Music size={24} /></div>
           <div className="mode-card-info">
             <h4>{t('rec.modeSongFromMovies')}</h4>
-            <p>La banda sonora de tus películas favoritas.</p>
+            <p>{t('rec.modeSongFromMoviesDesc')}</p>
           </div>
         </div>
 
@@ -104,7 +104,7 @@ const Recommendations = () => {
           <div className="mode-card-icon"><Sparkles size={24} /></div>
           <div className="mode-card-info">
             <h4>{t('rec.modeHybridFull')}</h4>
-            <p>Experiencia total: una película y una canción conectadas.</p>
+            <p>{t('rec.modeHybridFullDesc')}</p>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ const Recommendations = () => {
             disabled={loadingRec}
             className="error-retry-btn"
           >
-            {loadingRec ? <LoadingDots className="mini-loader" /> : 'Reintentar'}
+            {loadingRec ? <LoadingDots className="mini-loader" /> : t('common.retry')}
           </button>
         </div>
       )}
@@ -156,7 +156,7 @@ const Recommendations = () => {
               {/* Analysis Header */}
               <div className="vibe-badge">
                 <Sparkles size={14} />
-                <span>Análisis de IA: {recommendation.vibra}</span>
+                <span>{t('rec.aiAnalysis')}: {recommendation.vibra}</span>
               </div>
 
               <div className="rec-output-container">
@@ -171,7 +171,7 @@ const Recommendations = () => {
                         )}
                      </div>
                      <div className="rec-item-info">
-                        <span className="rec-tag">PELÍCULA RECOMENDADA</span>
+                        <span className="rec-tag">{t('rec.movieRecLabel')}</span>
                         <h3 className="rec-title-big">{recommendation.pelicula}</h3>
                         <p className="rec-synopsis">{recommendation.sinopsis}</p>
                      </div>
@@ -185,11 +185,11 @@ const Recommendations = () => {
                         <img src={recommendation.song_metadata.artwork} alt={recommendation.song_metadata.name} className="rec-visual-song shadow-xl" />
                      </div>
                      <div className="rec-item-info">
-                        <span className="rec-tag">CANCIÓN RECOMENDADA</span>
+                        <span className="rec-tag">{t('rec.songRecLabel')}</span>
                         <h3 className="rec-title-big">{recommendation.song_metadata.name}</h3>
                         <p className="rec-subtitle-big">{recommendation.song_metadata.artist}</p>
                         <a href={recommendation.song_metadata.url} target="_blank" rel="noopener noreferrer" className="spotify-play-btn">
-                          <Music size={16} /> Escuchar en Spotify
+                          <Music size={16} /> {t('rec.listenOnSpotify')}
                         </a>
                      </div>
                   </div>
@@ -199,7 +199,7 @@ const Recommendations = () => {
                 <div className="rec-reason-box">
                   <h4 className="rec-reason-title">
                     <Sparkles size={14} />
-                    ¿POR QUÉ ESTA ELECCIÓN?
+                    {t('rec.whyTitle')}
                   </h4>
                   <p className="rec-reason-text">{recommendation.motivo}</p>
                 </div>
@@ -207,7 +207,7 @@ const Recommendations = () => {
                 <div className="rec-footer-actions">
                   <button onClick={getRecommendation} className="rec-retry-button">
                     <RotateCcw size={16} />
-                    Nueva recomendación
+                    {t('rec.newBtn')}
                   </button>
                 </div>
               </div>

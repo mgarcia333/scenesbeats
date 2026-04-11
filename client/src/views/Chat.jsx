@@ -241,7 +241,7 @@ const Chat = () => {
               </div>
               <div className="chat-user-metadata">
                 <span className="chat-user-name">{friend?.name}</span>
-                <span className="chat-user-status">En línea</span>
+                <span className="chat-user-status">{t('community.online')}</span>
               </div>
             </div>
           </div>
@@ -304,7 +304,7 @@ const Chat = () => {
           <form className="chat-form" onSubmit={handleSendMessage}>
             <input 
               type="text" 
-              placeholder="Escribe un mensaje..." 
+              placeholder={t('common.typeMessage')}
               value={input}
               onChange={onInputChange}
               onFocus={() => handleTyping(false)}

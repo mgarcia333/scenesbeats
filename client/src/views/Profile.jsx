@@ -132,7 +132,7 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
         </div>
 
         <div className="search-results-mini">
-          {loading && <div className="loading-inline"><LoadingDots className="mini-loader" /> Buscando...</div>}
+          {loading && <div className="loading-inline"><LoadingDots className="mini-loader" /> {t('search.searching')}</div>}
           {!loading && results.map(item => (
             <div key={item.id} className="search-result-row" onClick={() => selectItem(item)}>
               <img src={item.image || 'https://placehold.co/40/1a1a1a/ffffff?text=?'} alt="" className="result-mini-img" />
@@ -144,7 +144,7 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
             </div>
           ))}
           {!loading && query.length >= 2 && results.length === 0 && (
-            <p className="text-muted small" style={{ textAlign: 'center', padding: '1rem' }}>No se encontraron resultados.</p>
+            <p className="text-muted small" style={{ textAlign: 'center', padding: '1rem' }}>{t('search.noResults', { query })}</p>
           )}
         </div>
       </div>
@@ -502,7 +502,7 @@ const Profile = () => {
                 <Radio size={12} />
               </div>
               <div className="np-info">
-                <span className="np-label">Listening now</span>
+                <span className="np-label">{t('profile.listeningNow')}</span>
                 <span className="np-track">{currentlyPlaying.name}</span>
               </div>
             </div>
@@ -564,24 +564,24 @@ const Profile = () => {
 
       {/* ── Gustos (Favorites) ── */}
       <section className="feed-section" style={{ marginTop: '2rem' }}>
-        <h2 className="section-title">Mis Gustos</h2>
+        <h2 className="section-title">{t('profile.myTastes')}</h2>
         <div className="gustos-container">
-          <GustoSection title="Películas" type="movie_fav" icon={Film} />
-          <GustoSection title="Actores" type="actor_fav" icon={Star} />
-          <GustoSection title="Directores" type="director_fav" icon={Circle} />
-          <GustoSection title="Canciones" type="song_fav" icon={Music} />
-          <GustoSection title="Álbumes" type="album_fav" icon={Radio} />
-          <GustoSection title="Artistas" type="artist_fav" icon={Music} />
+          <GustoSection title={t('profile.movies')} type="movie_fav" icon={Film} />
+          <GustoSection title={t('profile.actors')} type="actor_fav" icon={Star} />
+          <GustoSection title={t('profile.directors')} type="director_fav" icon={Circle} />
+          <GustoSection title={t('profile.songs')} type="song_fav" icon={Music} />
+          <GustoSection title={t('profile.albums')} type="album_fav" icon={Radio} />
+          <GustoSection title={t('profile.artists')} type="artist_fav" icon={Music} />
           
           {!loadingFavs && myFavorites.length === 0 && (
-            <p className="text-muted small">Aún no has añadido tus gustos favoritos.</p>
+            <p className="text-muted small">{t('profile.noTastes')}</p>
           )}
         </div>
       </section>
 
       {/* ── Friends Section ── */}
       <section className="feed-section" style={{ marginTop: '2.5rem' }}>
-        <h2 className="section-title">Amigos ({friends.length})</h2>
+        <h2 className="section-title">{t('profile.friends')} ({friends.length})</h2>
         {friends.length > 0 ? (
           <HorizontalScroll>
             {friends.map(friend => (
@@ -597,7 +597,7 @@ const Profile = () => {
             ))}
           </HorizontalScroll>
         ) : (
-          <p className="text-muted small">Aún no tienes amigos. ¡Busca usuarios en la pestaña de Buscar!</p>
+          <p className="text-muted small">{t('profile.noFriendsInvite')}</p>
         )}
       </section>
 

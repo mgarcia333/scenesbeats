@@ -116,7 +116,7 @@ const ListCard = ({ list, onDelete, onClick }) => {
           className="list-card-delete"
           onClick={handleDelete}
           disabled={deleting}
-          title="Eliminar lista"
+          title={t('list.deleteBtn')}
         >
           {deleting ? <LoadingDots className="mini-loader" /> : <Trash2 size={14} />}
         </button>
@@ -133,7 +133,7 @@ const ListCard = ({ list, onDelete, onClick }) => {
             <span className="list-card-tag"><Music size={11} /> {songCount}</span>
           )}
           {totalCount === 0 && (
-            <span className="list-card-tag" style={{ opacity: 0.5 }}>Vacía</span>
+            <span className="list-card-tag" style={{ opacity: 0.5 }}>{t('list.vacía')}</span>
           )}
         </div>
       </div>

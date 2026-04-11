@@ -184,7 +184,7 @@ const Community = () => {
           )}
 
           <div className="sidebar-section">
-            <h2 className="section-title">{t('common.friends') || 'Amigos'}</h2>
+            <h2 className="section-title">{t('common.friends')}</h2>
             <div className="sidebar-friends-list">
               {friends.length > 0 ? (
                 friends.map(friend => (
@@ -200,14 +200,14 @@ const Community = () => {
                     <button 
                       className="chat-link-btn" 
                       onClick={() => navigate(`/chat/${friend.id}`)}
-                      title="Abrir Chat"
+                      title={t('community.openChat')}
                     >
                       <MessageSquare size={16} />
                     </button>
                   </div>
                 ))
               ) : (
-                <p className="text-muted small">No tienes amigos agregados aún.</p>
+                <p className="text-muted small">{t('community.noFriends')}</p>
               )}
             </div>
           </div>

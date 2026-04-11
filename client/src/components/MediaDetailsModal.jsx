@@ -27,12 +27,12 @@ const MediaDetailsModal = ({ isOpen, onClose, item, type, onAddToList }) => {
             </div>
 
             <p style={{ fontSize: '1rem', lineHeight: 1.6, opacity: 0.8, margin: 0 }}>
-              {item.overview || item.description || "No description available."}
+              {item.overview || item.description || t('detail.noDescription')}
             </p>
 
             <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
               <button onClick={() => onAddToList(item, type)} className="rec-button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                <PlusCircle size={20} /> {t('profile.newList')}
+                <PlusCircle size={20} /> {t('common.addToList')}
               </button>
             </div>
           </div>

@@ -61,7 +61,7 @@ const Register = () => {
     try {
       const result = await register({ name, email, password });
       if (result.status === 'success') {
-        navigate('/login', { state: { message: 'Registro completado. Por favor, inicia sesión.' } });
+        navigate('/login', { state: { message: t('auth.registerSuccess') } });
       } else {
         setError(result.message || t('auth.errorRegister'));
       }

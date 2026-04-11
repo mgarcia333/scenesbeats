@@ -1,10 +1,23 @@
 {
   "search": {
     "placeholder": "Search movies or songs...",
+    "placeholderMovie": "Search for a movie...",
+    "placeholderSong": "Search for a song...",
     "movies": "Movies",
     "music": "Music",
+    "people": "People",
+    "artists": "Artists",
+    "users": "Users",
     "noResults": "No results found for '{{query}}'",
-    "searching": "Searching..."
+    "itemNotFound": "Item not found",
+    "searching": "Searching...",
+    "searchingGalaxy": "Searching deep in the galaxy...",
+    "exploreTitle": "Explore ScenesBeats",
+    "exploreSubtitle": "Search for movies, music, creators or your friends.",
+    "knownFor": "Known for",
+    "musician": "Musician",
+    "noResultsSmall": "No results found",
+    "noRecentItems": "No recent items"
   },
   "home": {
     "loading": "Loading...",
@@ -42,8 +55,10 @@
     "registerBtn": "Sign Up",
     "haveAccount": "Already have an account?",
     "errorLogin": "Error signing in",
+    "errorCredentials": "Incorrect credentials. Please check your data.",
     "errorGoogle": "Error syncing with Google",
-    "errorRegister": "Error creating account"
+    "errorRegister": "Error creating account",
+    "registerSuccess": "Registration completed. Please sign in."
   },
   "landing": {
     "tagline": "Find what to watch based on what you hear. Connect Spotify and Letterboxd for a cinematic experience powered by your music.",
@@ -104,6 +119,7 @@
     "lbError": "Enter a valid Letterboxd username.",
     "saveError": "Could not save. Check the username and try again.",
     "spotifySuccess": "Spotify connected successfully!",
+    "spotifyExpired": "Spotify session expired",
     "myMusic": "My Music",
     "loadingMusic": "Loading music...",
     "noRecentSongs": "No recent songs found.",
@@ -111,7 +127,21 @@
     "connectLetterboxdCTA": "Connect your Letterboxd account to see your watched movies",
     "loadingMovies": "Loading movies...",
     "noMoviesFound": "No movies found for",
-    "changeUser": "Change user"
+    "changeUser": "Change user",
+    "logout": "Logout",
+    "syncing": "Syncing...",
+    "listeningNow": "Listening now",
+    "myTastes": "My Tastes",
+    "actors": "Actors",
+    "directors": "Directors",
+    "albums": "Albums",
+    "artists": "Artists",
+    "noTastes": "You haven't added your favorite tastes yet.",
+    "noFriendsInvite": "You don't have friends yet. Search for users in the Search tab!",
+    "userNotFound": "User not found",
+    "publicLists": "Public Lists",
+    "noPublicLists": "This user has no public lists yet.",
+    "connections": "Connections"
   },
   "settings": {
     "title": "Settings",
@@ -138,24 +168,28 @@
     "errorSpotify": "Your Spotify session has expired. Please go to Home and sign in again.",
     "errorGeneral": "Error getting recommendation.",
     "why": "Why?",
-    "vibe": "VIBE"
+    "whyDesc": "Why this movie?",
+    "whyTitle": "WHY THIS CHOICE?",
+    "idealMovie": "The perfect movie.",
+    "vibe": "VIBE",
+    "subtitle": "Let the AI analyze your musical and film vibe to discover your next obsession.",
+    "modeMovieFromMusicDesc": "Your ideal cinema based on what you hear today.",
+    "modeSongFromMoviesDesc": "The soundtrack of your favorite movies.",
+    "modeHybridFullDesc": "Total experience: a movie and a song connected.",
+    "aiAnalysis": "AI Analysis",
+    "movieRecLabel": "RECOMMENDED MOVIE",
+    "songRecLabel": "RECOMMENDED SONG",
+    "listenOnSpotify": "Listen on Spotify",
+    "newBtn": "New recommendation",
+    "errorBusy": "The AI is busy right now. Wait a few seconds and try again."
   },
   "community": {
     "title": "Community",
-    "activities": "Recent activity",
-    "requests": "Pending requests",
+    "noActivity": "No recent activity in your circle.",
+    "noFriends": "You don't have any friends added yet.",
+    "requests": "Requests",
     "suggestions": "Suggestions",
-    "suggestionsDesc": "Suggestions based on your tastes.",
-    "noActivity": "No recent activity.",
-    "searchPlaceholderMovies": "Search for a movie you're in the mood for...",
-    "searchPlaceholderMusic": "Search for that beat in your head...",
-    "cinema": "Cinema",
-    "music": "Music",
-    "recommendedSongs": "Recommended Songs",
-    "noResultsFound": "We couldn't find anything for \"{{query}}\".",
-    "tryAnotherVibe": "Try another vibe.",
-    "preparingStage": "Preparing the stage...",
-    "searchingTreasures": "Searching for treasures...",
+    "suggestionsDesc": "Search for other cinephiles and music lovers to connect.",
     "listened": "listened to",
     "watched": "watched",
     "createdList": "created the list",
@@ -163,6 +197,21 @@
     "genRec": "generated a recommendation for",
     "accept": "Accept",
     "reject": "Reject",
+    "activities": "Recent activity",
+    "openChat": "Open Chat",
+    "online": "Online",
+    "cinema": "Cinema",
+    "music": "Music",
+    "pending": "Pending",
+    "addFriend": "Add Friend",
+    "sent": "Sent",
+    "searchPlaceholderMovies": "Search for a movie you're in the mood for...",
+    "searchPlaceholderMusic": "Search for that beat in your head...",
+    "recommendedSongs": "Recommended Songs",
+    "noResultsFound": "We couldn't find anything for \"{{query}}\".",
+    "tryAnotherVibe": "Try another vibe.",
+    "preparingStage": "Preparing the stage...",
+    "searchingTreasures": "Searching for treasures...",
     "genres": {
       "action": "Action",
       "comedy": "Comedy",
@@ -175,19 +224,6 @@
       "dance": "Dance",
       "indie": "Indie"
     }
-  },
-  "common": {
-    "loading": "Loading...",
-    "error": "An error occurred",
-    "back": "Back",
-    "save": "Save",
-    "cancel": "Cancel",
-    "addToList": "Add to list",
-    "summary": "Summary",
-    "friends": "Friends",
-    "messages": "Messages",
-    "chat": "Chat",
-    "send": "Send"
   },
   "list": {
     "loading": "Loading list...",
@@ -202,8 +238,10 @@
     "idealSong": "Ideal Song",
     "theMotive": "The Motive",
     "empty": "This list is empty. Search for a movie or song and add it from its card.",
+    "vacía": "Empty",
     "removeItem": "Remove from list",
-    "vibe": "List vibe"
+    "vibe": "List vibe",
+    "elementsBy": "{{count}} items • by {{name}}"
   },
   "nav": {
     "home": "Home",
@@ -212,6 +250,43 @@
     "recommendations": "Discover",
     "lists": "Lists",
     "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading...",
+    "loadingChat": "Loading chat...",
+    "error": "An error occurred",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "addToList": "Add to list",
+    "summary": "Summary",
+    "friends": "Friends",
+    "messages": "Messages",
+    "chat": "Chat",
+    "send": "Send",
+    "typeMessage": "Type a message...",
+    "add": "Add",
+    "addedSuccess": "Added successfully",
+    "addError": "Error adding item",
+    "sent": "Sent",
+    "open": "Open",
+    "delete": "Delete",
+    "retry": "Retry",
+    "viewOnLB": "View on Letterboxd",
+    "openSpotify": "Open on Spotify",
+    "movie": "Movie",
+    "music": "Music",
+    "me": "me",
+    "shareContent": "Share content"
+  },
+  "detail": {
+    "noDescription": "No description available.",
+    "songFromAlbum": "Song from the album \"{{album}}\".",
+    "todayRec": "Recommendation of the Day",
+    "todayDesc": "We analyze your current musical vibe to find you the perfect movie.",
+    "discoverMovie": "Discover my Movie",
+    "recentlyWatched": "Recently watched",
+    "recentlyHeard": "Recently heard"
   },
   "lists": {
     "title": "My Lists",
@@ -244,6 +319,7 @@
     "collabInvite": "Invite friends to edit this list with you.",
     "by": "by",
     "collaboratorsCount": "collaborators",
-    "alreadyInList": "This item is already in the list."
+    "alreadyInList": "This item is already in the list.",
+    "noLists": "You don't have any lists yet."
   }
 }

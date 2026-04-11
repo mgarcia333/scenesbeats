@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { socialApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -10,6 +11,7 @@ import HorizontalScroll from '../components/HorizontalScroll';
 import { socket } from '../App';
 
 const UserProfile = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -67,7 +69,7 @@ const UserProfile = () => {
   };
 
   if (loading) return <div className="loader-container"><div className="loader spin"></div></div>;
-  if (!profileUser) return <div className="view-container">Usuario no encontrado</div>;
+  if (!profileUser) return <div className="view-container">{t('profile.userNotFound')}</div>;
 
   return (
     <div className="view-container animate-fadeIn">
@@ -91,11 +93,11 @@ const UserProfile = () => {
           <div className="profile-actions-row" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
             {friendStatus === 'accepted' ? (
               <div className="status-badge">
-                <Check size={16} /> <span>Amigos</span>
+                <Check size={16} /> <span>{t('common.friends')}</span>
               </div>
             ) : friendStatus === 'pending' ? (
               <div className="status-badge pending">
-                <Clock size={16} /> <span>Pendiente</span>
+                <Clock size={16} /> <span>{t('social.pending')}</span>
               </div>
             ) : (
               <button 
@@ -105,7 +107,7 @@ const UserProfile = () => {
                 style={{ padding: '0.5rem 1.5rem', height: '40px' }}
               >
                 {loadingAction ? <div className="loader-xs"></div> : <UserPlus size={18} />}
-                <span>Añadir Amigo</span>
+                <span>{t('social.addFriend')}</span>
               </button>
             )}
           </div>
@@ -113,7 +115,7 @@ const UserProfile = () => {
       </div>
 
       <section className="feed-section" style={{ marginTop: '3rem' }}>
-        <h2 className="section-title">Listas Públicas ({profileUser.lists?.length || 0})</h2>
+        <h2 className="section-title">{t('profile.publicLists')} ({profileUser.lists?.length || 0})</h2>
         {profileUser.lists && profileUser.lists.length > 0 ? (
           <HorizontalScroll>
             {profileUser.lists.map(list => (
@@ -128,18 +130,18 @@ const UserProfile = () => {
                   <span className="small font-bold">{list.name}</span>
                 </div>
                 <div className="text-muted small">
-                  {list.items_count || 0} elementos
+                  {list.items_count || 0} {t('list.elements')}
                 </div>
               </div>
             ))}
           </HorizontalScroll>
         ) : (
-          <p className="text-muted small">Este usuario aún no tiene listas públicas.</p>
+          <p className="text-muted small">{t('profile.noPublicLists')}</p>
         )}
       </section>
 
       <section className="feed-section" style={{ marginTop: '3rem' }}>
-        <h2 className="section-title">Conexiones</h2>
+        <h2 className="section-title">{t('profile.connections')}</h2>
         <div style={{ display: 'flex', gap: '1rem' }}>
           {profileUser.spotify_id && (
             <div className="connection-badge connected">

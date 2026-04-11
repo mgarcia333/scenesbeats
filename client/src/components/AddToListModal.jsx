@@ -39,11 +39,11 @@ const AddToListModal = ({ item, onClose }) => {
         image_url: item.image_url,
         type: item.type
       });
-      setStatus({ listId, type: 'success', msg: t('common.added') || 'Añadido correctamente' });
+      setStatus({ listId, type: 'success', msg: t('common.addedSuccess') });
       setTimeout(() => onClose(), 1500);
     } catch (err) {
       console.error('Add to list error:', err);
-      setStatus({ listId, type: 'error', msg: t('common.error') || 'Error al añadir' });
+      setStatus({ listId, type: 'error', msg: t('common.addError') });
     } finally {
       setAddingTo(null);
     }
@@ -55,7 +55,7 @@ const AddToListModal = ({ item, onClose }) => {
         <div className="modal-header">
           <div className="modal-title-group">
             <ListPlus className="modal-icon" size={20} />
-            <h2 className="modal-title">{t('common.addToList') || 'Añadir a lista'}</h2>
+            <h2 className="modal-title">{t('common.addToList')}</h2>
           </div>
           <button className="modal-close" onClick={onClose}>
             <X size={20} />
@@ -97,7 +97,7 @@ const AddToListModal = ({ item, onClose }) => {
                 </button>
               ))
             ) : (
-              <p className="stat-label text-center p-4">{t('lists.noLists') || 'No tienes listas todavía.'}</p>
+              <p className="stat-label text-center p-4">{t('lists.noLists')}</p>
             )}
           </div>
         </div>

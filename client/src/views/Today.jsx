@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { recommendationApi } from '../api';
 
 const Today = () => {
+  const { t } = useTranslation();
   const [loadingRec, setLoadingRec] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -15,9 +16,9 @@ const Today = () => {
       setRecommendation(res.data);
     } catch (err) {
       if (err.response && err.response.status === 401) {
-        setErrorMsg("Tu sesión de Spotify ha expirado o no se ha encontrado. Por favor, ve a la Home e inicia sesión de nuevo.");
+        setErrorMsg(t('rec.errorSpotify'));
       } else {
-        setErrorMsg(err.response?.data?.error || "Error de red al conectar con el servidor.");
+        setErrorMsg(err.response?.data?.error || t('common.error'));
       }
       console.error(err);
     } finally {
@@ -27,16 +28,16 @@ const Today = () => {
 
   return (
     <div className="view-container">
-      <h2 className="section-title">Recomendación del Día</h2>
+      <h2 className="section-title">{t('detail.todayRec')}</h2>
       
       <div className="recommendation-hero">
-        <p className="hero-text">Analizamos tu vibra musical actual para encontrarte la película perfecta.</p>
+        <p className="hero-text">{t('detail.todayDesc')}</p>
         <button 
           onClick={getRecommendation} 
           className="rec-button"
           disabled={loadingRec}
         >
-          {loadingRec ? "Sincronizando..." : "Descubrir mi Película"}
+          {loadingRec ? t('profile.syncing') : t('detail.discoverMovie')}
         </button>
       </div>
 
@@ -45,7 +46,7 @@ const Today = () => {
       {recommendation && (
         <div className="recommendation-result">
           <div className="result-header">
-             <span className="vibra-badge">Tu Vibra: {recommendation.vibra}</span>
+             <span className="vibra-badge">{t('rec.vibe')}: {recommendation.vibra}</span>
           </div>
           <div className="result-content">
             {recommendation.poster_url && (
@@ -55,7 +56,7 @@ const Today = () => {
               <h3 className="result-title">{recommendation.pelicula}</h3>
               <p className="result-synopsis">{recommendation.sinopsis}</p>
               <div className="result-reason">
-                <h4>¿Por qué esta película?</h4>
+                <h4>{t('rec.whyDesc')}</h4>
                 <p>{recommendation.motivo}</p>
               </div>
             </div>
