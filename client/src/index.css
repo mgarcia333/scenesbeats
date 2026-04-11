@@ -651,6 +651,9 @@ body {
   overflow-x: auto;
   padding-bottom: 1rem;
   scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 1rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .horizontal-scroll::-webkit-scrollbar {
@@ -670,6 +673,7 @@ body {
   border: 1px solid var(--border-color);
   box-shadow: var(--card-shadow);
   transition: all 0.2s;
+  scroll-snap-align: start;
 }
 
 .activity-card:hover {
@@ -737,6 +741,8 @@ body {
   flex-wrap: nowrap;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 1.5rem;
 }
 
 .horizontal-scroll::-webkit-scrollbar {
@@ -746,6 +752,7 @@ body {
 .horizontal-scroll.dragging {
   cursor: grabbing;
   scroll-behavior: auto;
+  scroll-snap-type: none;
 }
 
 .horizontal-scroll.dragging * {
@@ -758,6 +765,7 @@ body {
   flex-direction: column;
   gap: 0.5rem;
   transition: transform 0.2s;
+  scroll-snap-align: start;
 }
 
 @media (min-width: 480px) {

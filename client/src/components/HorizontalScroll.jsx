@@ -49,9 +49,6 @@ const HorizontalScroll = ({ children }) => {
       onMouseLeave={stopDragging}
       onMouseUp={stopDragging}
       onMouseMove={handleMouseMove}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={stopDragging}
     >
       {children}
     </div>
