@@ -1,12 +1,12 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch index.js",
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -14,10 +14,22 @@
   "description": "",
   "dependencies": {
     "@google/genai": "^1.44.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.6",
+    "cookie": "^1.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "scenes-and-beats": "file:..",
+    "socket.io": "^4.8.3",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.29.0",
+    "@types/jest": "^30.0.0",
+    "babel-jest": "^30.3.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
   }
 }

@@ -1,10 +1,10 @@
 {
   "name": "scenes-and-beats",
   "version": "1.0.0",
-  "description": "Scenes & Beats App",
+  "description": "ScenesBeats App",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\" \"cd laravel-api && php artisan serve --port=8000\"",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client && cd laravel-api && composer install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
