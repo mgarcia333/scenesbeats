@@ -339,7 +339,7 @@ body {
   flex: 1;
   margin-top: 52px;
   margin-bottom: 58px;
-  padding: 0;
+  padding: 1rem 0 0 0;
   min-height: calc(100vh - 52px - 58px);
   width: 100%;
   box-sizing: border-box;
