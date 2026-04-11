@@ -4,21 +4,17 @@ import { parseStringPromise } from 'xml2js';
 import { withRetry } from '../utils/aiUtils.js';
 import { saveRecommendationHistory } from '../utils/laravel.js';
 
-// Model fallback chain — tries in order until one succeeds
-const MODEL_CHAIN = [
-  'gemini-2.5-flash',
-  'gemini-1.5-pro',
-  'gemini-pro',
-];
+// Default model for Google Generative AI
+const PRIMARY_MODEL = 'gemini-2.0-flash';
 
 const geminiGenerate = async (prompt, generationConfig = {}) => {
   return await withRetry(async () => {
     if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is missing in environmental variables.');
+      throw new Error('GEMINI_API_KEY is missing.');
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const modelName = 'gemini-2.5-flash';
+    const modelName = generationConfig.model || PRIMARY_MODEL;
 
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
@@ -32,7 +28,17 @@ const geminiGenerate = async (prompt, generationConfig = {}) => {
         }
       });
 
-      const text = result.response.text().replace(/```json|```/gi, '').trim();
+      const responseText = result.response.text();
+      
+      // Robust JSON extraction
+      let text = responseText;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        text = jsonMatch[0].trim();
+      } else {
+        text = responseText.replace(/```json|```/gi, '').trim();
+      }
+      
       console.log(`✅ Gemini responded with model: ${modelName}`);
       return text;
     } catch (err) {
@@ -139,11 +145,47 @@ export const generateRecommendation = async (req, res) => {
       movieContext = await fetchLetterboxdContext(lb_username);
     }
 
-    // Localized labels and instructions
+    // Localized labels
     const labels = {
-      es: { favs: "FAVORITOS DEL USUARIO:", movies: "Películas", songs: "Canciones", system: "Eres un curator cultural de élite y experto en sinestesia audiovisual. Tu especialidad es encontrar el 'hilo invisible' que conecta una canción con una película. No te limites a géneros obvios; busca conexiones en la textura sonora, el ritmo narrativo, el tono emocional y la paleta de colores sugerida. Sé evocador, poético y muy preciso en tus referencias culturales.", rule: "Respuesta en JSON estricto, sin texto adicional. TODO el contenido de los campos 'vibra' y 'motivo' debe estar en ESPAÑOL." },
-      en: { favs: "USER FAVORITES:", movies: "Movies", songs: "Songs", system: "You are an elite cultural curator and expert in audiovisual synesthesia. Your specialty is finding the 'invisible thread' that connects a song to a film. Don't limit yourself to obvious genres; look for connections in sonic texture, narrative rhythm, emotional tone, and suggested color palettes. Be evocative, poetic, and highly precise in your cultural references.", rule: "Strict JSON response, no additional text. ALL content in the 'vibra' and 'motivo' fields must be in ENGLISH." },
-      ca: { favs: "PREFERITS DE L'USUARI:", movies: "Pel·lícules", songs: "Cançons", system: "Ets un curador cultural d'elit i expert en sinestèsia audiovisual. La teva especialitat és trobar el 'fil invisible' que connecta una cançó amb una pel·lícula. No et limitis a gèneres obvis; busca connexions en la textura sonora, el ritme narratiu, el to emocional i la paleta de colors suggerida. Sigues evocador, poètic i molt precís en les teves referències culturals.", rule: "Resposta en JSON estricte, sense text addicional. TOT el contingut dels camps 'vibra' i 'motivo' ha d'estar en CATALÀ." }
+      es: { 
+        favs: "FAVORITOS (Señales de alta prioridad):", 
+        movies: "Películas que el usuario ama", 
+        songs: "Canciones que el usuario ama", 
+        system: `Eres "The Alchemist of Art", un curador cultural de élite y experto en sinestesia audiovisual. Tu misión es crear conexiones profundas y profesionales entre la música y el cine.
+        
+        DIRECTRICES DE CURACIÓN:
+        1. PERSONALIZACIÓN PROFUNDA: Debes utilizar el historial proporcionado. En tu campo 'motivo', MENCIONA EXPLÍCITAMENTE títulos de canciones o películas que el usuario ya ha visto o escuchado para explicar la conexión.
+        2. ANÁLISIS DE ESTRELLAS: Presta atención a las notas en el historial de Letterboxd. Las puntuaciones de 4.0 o 5.0 son tus "balizas" estéticas; recomienda algo que comparta esa alma. Ignora o evita estilos similares a lo que tenga menos de 2.0 estrellas.
+        3. TONO: Sé sofisticado, técnico pero evocador. Habla de texturas sonoras, paletas cromáticas, ritmo de montaje y resonancia temática.
+        4. CALIDAD SOBRE CANTIDAD: Prefiere una recomendación que sea un "diez" absoluto basado en sus gustos que algo genérico.`,
+        rule: "Respuesta en JSON estricto, sin texto adicional fuera del JSON. Los campos 'vibra' y 'motivo' deben estar en ESPAÑOL profesional." 
+      },
+      en: { 
+        favs: "FAVORITES (High priority signals):", 
+        movies: "Movies the user loves", 
+        songs: "Songs the user loves", 
+        system: `You are "The Alchemist of Art", an elite cultural curator and audiovisual synesthesia expert. Your mission is to create deep and professional connections between music and cinema.
+        
+        CURATION GUIDELINES:
+        1. DEEP PATH: You must use the provided history. In your 'reason' (motivo) field, EXPLICITLY MENTION song or movie titles the user has already seen or heard to explain the connection.
+        2. STAR ANALYSIS: Pay attention to the ratings in the Letterboxd history. Scores of 4.0 or 5.0 are your aesthetic "beacons"; recommend something that shares that soul. Ignore or avoid styles similar to anything with less than 2.0 stars.
+        3. TONE: Be sophisticated, technical yet evocative. Talk about sonic textures, color palettes, montage rhythm, and thematic resonance.
+        4. QUALITY OVER QUANTITY: Prefer a recommendation that is an absolute "ten" based on their tastes over something generic.`,
+        rule: "Strict JSON response, no additional text outside the JSON. The 'vibra' and 'motivo' fields must be in professional ENGLISH." 
+      },
+      ca: { 
+        favs: "PREFERITS (Senyals d'alta prioritat):", 
+        movies: "Pel·lícules que l'usuari estima", 
+        songs: "Cançons que l'usuari estima", 
+        system: `Ets "The Alchemist of Art", un curador cultural d'elit i expert en sinestèsia audiovisual. La teva missió és crear connexions profundes i professionals entre la música i el cinema.
+        
+        DIRECTRIUS DE CURACIÓ:
+        1. PERSONALITZACIÓ PROFUNDA: Has d'utilitzar l'historial proporcionat. En el teu camp 'motiu', MENCIONA EXPLÍCITAMENT títols de cançons o pel·lícules que l'usuari ja ha vist o escoltat per explicar la connexió.
+        2. ANÀLISI D'ESTRELLES: Presta atenció a les notes en l'historial de Letterboxd. Les puntuacions de 4.0 o 5.0 són les teves "balises" estètiques; recomana alguna cosa que comparteixi aquesta ànima. Ignora o evita estils similars al que tingui menys de 2.0 estrelles.
+        3. TO: Sigues sofisticat, tècnic però evocador. Parla de textures sonores, paletes cromàtiques, ritme de muntatge i ressonància temàtica.
+        4. QUALITAT SOBRE QUANTITAT: Prefereix una recomanació que sigui un "deu" absolut basat en els seus gustos que alguna cosa genèrica.`,
+        rule: "Resposta en JSON estricte, sense text addicional fora del JSON. Els camps 'vibra' i 'motivo' han d'estar en CATALÀ professional." 
+      }
     };
 
     const l = labels[lang] || labels.es;
@@ -225,7 +267,7 @@ export const generateRecommendation = async (req, res) => {
         FORMATO: ${outputFormat}`;
     }
 
-    // 3. Call Gemini
+    // 3. Call AI (Gemini 2.0 Flash -> Groq Fallback)
     console.log(`Generating AI recommendation for mode: ${mode}...`);
     let recommendationText;
 
@@ -236,24 +278,40 @@ export const generateRecommendation = async (req, res) => {
       try {
         recommendationText = await groqGenerate(prompt);
       } catch (groqErr) {
-        if (err.message === 'QUOTA_EXCEEDED') {
-          return res.status(429).json({ error: 'Límite de cuota alcanzado en todos los proveedores. Inténtalo en unos minutos.' });
-        }
         return res.status(503).json({ error: 'Servicios de IA temporalmente saturados.' });
       }
     }
 
     let recJSON;
-    try {
-      recJSON = JSON.parse(recommendationText);
-    } catch (e) {
-      console.warn("AI JSON parse failed, using fallback...");
-      recJSON = {
-        vibra: "Escena de alta intensidad emocional y estética.",
-        pelicula: "Eternal Sunshine of the Spotless Mind",
-        cancion: "Everything in Its Right Place - Radiohead",
-        motivo: "La IA tuvo un pequeño lapsus, pero esta conexión es infalible para cualquier amante de la buena música y cine."
-      };
+    const maxRetries = 2;
+    let attempts = 0;
+
+    while (attempts < maxRetries) {
+      try {
+        recJSON = JSON.parse(recommendationText);
+        break; // Success
+      } catch (e) {
+        attempts++;
+        console.warn(`Attempt ${attempts} - AI JSON parse failed. Raw Text Sample:`, recommendationText?.slice(0, 100));
+        
+        if (attempts < maxRetries) {
+          console.log("Retrying with stricter JSON instruction...");
+          const retryPrompt = `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON. Please provide ONLY the JSON object, NO markdown, NO text.`;
+          try {
+            recommendationText = await geminiGenerate(retryPrompt, { temperature: 0.5 });
+          } catch (err) {
+            recommendationText = await groqGenerate(retryPrompt);
+          }
+        } else {
+          console.error("Final parse attempt failed. Using fallback.");
+          recJSON = {
+            vibra: "Escena de alta intensidad emocional y estética.",
+            pelicula: "Eternal Sunshine of the Spotless Mind",
+            cancion: "Everything in Its Right Place - Radiohead",
+            motivo: "La IA tuvo un pequeño lapsus agotando los reintentos, pero esta conexión es infalible."
+          };
+        }
+      }
     }
 
     // 4. Enrich Results (Metadata fetch)
@@ -475,9 +533,6 @@ export const generateFromList = async (req, res) => {
       try {
         text = await groqGenerate(`${systemInstruction}\n\n${context}\nFORMATO JSON:\n${outputFormat}`);
       } catch (groqErr) {
-        if (err.message === 'QUOTA_EXCEEDED') {
-          return res.status(429).json({ error: 'Límite de cuota alcanzado. Espera unos minutos.' });
-        }
         return res.status(503).json({ error: 'El servicio de IA está temporalmente saturado.' });
       }
     }
@@ -517,6 +572,29 @@ export const generateFromList = async (req, res) => {
 
     if (posterUrl) jsonResponse.poster_url = posterUrl;
 
+    // Enrichment: Song
+    if (jsonResponse.cancion && req.spotifyToken) {
+      try {
+        const query = jsonResponse.cancion;
+        const spotRes = await axios.get(`https://api.spotify.com/v1/search`, {
+          params: { q: query, type: 'track', limit: 1 },
+          headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
+        });
+        const track = spotRes.data.tracks?.items?.[0];
+        if (track) {
+          jsonResponse.song_metadata = {
+            name: track.name,
+            artist: track.artists[0].name,
+            artwork: track.album.images[0]?.url,
+            url: track.external_urls.spotify,
+            preview: track.preview_url
+          };
+        }
+      } catch (e) { 
+        console.warn("Spotify Enrichment (list) failed:", e.message); 
+      }
+    }
+
     if (req.body.userId) {
       const recsToSave = [];
       if (jsonResponse.pelicula) {
@@ -531,8 +609,9 @@ export const generateFromList = async (req, res) => {
         let titleParts = jsonResponse.cancion.split('-');
         recsToSave.push({
           type: 'song',
-          titulo: titleParts[0]?.trim() || jsonResponse.cancion,
-          subtitulo: titleParts[1]?.trim() || null,
+          titulo: jsonResponse.song_metadata?.name || titleParts[0]?.trim() || jsonResponse.cancion,
+          subtitulo: jsonResponse.song_metadata?.artist || titleParts[1]?.trim() || null,
+          image_url: jsonResponse.song_metadata?.artwork,
           motivo: jsonResponse.motivo
         });
       }

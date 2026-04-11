@@ -61,6 +61,7 @@ export const socialApi = {
   removeFriend: (id) => laravelApi.delete(`/friendships/${id}`),
   getActivities: () => laravelApi.get('/activities'),
   searchUsers: (query) => laravelApi.get(`/users/search?query=${query}`),
+  getSuggestions: (userId) => laravelApi.get(`/users/suggestions?user_id=${userId}`),
   getUserProfile: (id) => laravelApi.get(`/users/${id}`),
   createActivity: (data) => laravelApi.post('/activities', data),
 };

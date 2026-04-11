@@ -21,7 +21,7 @@
   },
   "home": {
     "latestMovies": "Últimas Películas (En Tendencia)",
-    "myRecentMovies": "Mis Películas Recientes (Letterboxd)",
+    "myRecentMovies": "Mis Películas Recientes",
     "recentSongs": "Tus Últimas Canciones",
     "friendActivity": "Actividad de Amigos",
     "welcomeTitle": "Tu música, tus películas.",
@@ -190,6 +190,7 @@
     "requests": "Solicitudes",
     "suggestions": "Sugerencias",
     "suggestionsDesc": "Busca a otros cinéfilos y melómanos para conectar.",
+    "noSuggestions": "No hay sugerencias disponibles en este momento.",
     "listened": "escuchó",
     "watched": "vio",
     "createdList": "ha creado una nueva lista:",

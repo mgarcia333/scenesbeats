@@ -7,11 +7,11 @@ import LoadingDots from '../components/LoadingDots';
 import {
   ArrowLeft, Trash2, X, Sparkles, Music, Film,
   ListMusic, ExternalLink, Check, ChevronDown, ChevronUp, Search, Plus,
-  Users, UserPlus, Wand2, Share2, Loader2, Info
+  Users, UserPlus, Wand2, Share2, Loader2, Info, Sparkle
 } from 'lucide-react';
 
 /* ── Item card ────────────────────────────── */
-const ItemCard = ({ item, canEdit, onRemove }) => {
+const ItemCard = ({ item, canEdit, onRemove, t }) => {
   const isMovie = item.type === 'movie';
   const [removing, setRemoving] = useState(false);
 
@@ -35,7 +35,7 @@ const ItemCard = ({ item, canEdit, onRemove }) => {
           {isMovie ? <Film size={10} /> : <Music size={10} />}
         </span>
         {canEdit && (
-          <button className="lv-item-remove" onClick={handleRemove} disabled={removing} title={t('lists.removeItem')}>
+          <button className="lv-item-remove" onClick={handleRemove} disabled={removing} title={t ? t('lists.removeItem') : 'Remove'}>
             {removing ? <LoadingDots className="mini-loader" /> : <X size={12} />}
           </button>
         )}
@@ -172,6 +172,10 @@ const ListView = () => {
   const [completing, setCompleting] = useState(false);
   const [showMagic, setShowMagic] = useState(false);
 
+  // Single recommendation state
+  const [singleRec, setSingleRec] = useState(null);
+  const [loadingSingle, setLoadingSingle] = useState(false);
+
   // Collab states
   const [friends, setFriends] = useState([]);
   const [showCollabModal, setShowCollabModal] = useState(false);
@@ -246,6 +250,33 @@ const ListView = () => {
       setRecPool(tagged.slice(6));
     } catch (err) { console.error(err); }
     finally { setCompleting(false); }
+  };
+
+  const handleSingleRecommendation = async () => {
+    if (!list?.items?.length) return;
+    setLoadingSingle(true);
+    try {
+      const movies = list.items.filter(i => i.type === 'movie');
+      const songs = list.items.filter(i => i.type === 'song');
+      
+      const movieTitles = movies.map(m => m.title).slice(0, 5);
+      const songTitles = songs.map(s => s.title || s.name).slice(0, 5);
+      
+      const res = await recommendationApi.generate({
+        mode: 'hybrid',
+        lb_username: user?.letterboxd_username,
+        fav_movies: movieTitles.map(t => ({ title: t })),
+        fav_songs: songTitles.map(t => ({ title: t })),
+        lang: i18n.language,
+        userId: user?.id
+      });
+      
+      setSingleRec(res.data);
+    } catch (err) { 
+      console.error(err); 
+      alert('Error al generar recomendación');
+    }
+    finally { setLoadingSingle(false); }
   };
 
   const handleAddItem = async (item, poolIdx) => {
@@ -355,19 +386,30 @@ const ListView = () => {
   
   const movies = list.items?.filter(i => i.type === 'movie') || [];
   const songs = list.items?.filter(i => i.type === 'song') || [];
-  const firstMovie = movies[0];
+  const firstItem = list.items?.[0];
+  const placeholderImg = '/placeholder.png';
 
   return (
     <div className="lv-premium-container">
       {/* ── HERO HEADER ── */}
       <header className="lv-hero-header">
-        <div className="lv-header-backdrop">
-          <img src={list.cover_image_url || firstMovie?.image_url || '/placeholder.png'} className="lv-backdrop-img" alt="" />
-          <div className="lv-backdrop-overlay" />
+        <div className="lv-header-top-row">
+          <button className="lv-back-btn" onClick={() => navigate('/lists')}>
+            <ArrowLeft size={22} />
+          </button>
+          {isOwner && (
+            <button className="lv-delete-btn" onClick={handleDeleteList} disabled={deleting} title={t('common.delete')}>
+              <Trash2 size={18} />
+            </button>
+          )}
         </div>
-
+        
         <div className="lv-header-content">
-          <img src={list.cover_image_url || firstMovie?.image_url || '/placeholder.png'} className="lv-main-cover animate-fadeIn" alt="" />
+          <img 
+            src={list.cover_image_url || firstItem?.image_url || placeholderImg} 
+            className="lv-main-cover animate-fadeIn" 
+            alt="" 
+          />
           
           <div className="lv-info-pane">
             <h1 className="lv-name-h1">{list.name}</h1>
@@ -420,33 +462,65 @@ const ListView = () => {
             {list.description && <p className="lv-desc-text">{list.description}</p>}
           </div>
         </div>
-
-        {/* Back button */}
-        <button className="lv-back-btn" onClick={() => navigate('/lists')} style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 100 }}>
-          <ArrowLeft size={20} />
-        </button>
       </header>
 
       {/* ── ACTION BUTTONS ── */}
-      <div className="lv-premium-actions">
+      <div className="lv-actions-row">
         {canEdit && (
-          <button className="lv-prime-btn magic" onClick={handleMagicComplete} disabled={completing}>
-            {completing ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
-            {t('lists.magicComplete') || 'Completar con IA'}
-          </button>
+          <>
+            <button className="lv-action-btn primary" onClick={handleMagicComplete} disabled={completing}>
+              {completing ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
+              <span>Completar con IA</span>
+            </button>
+            <button className="lv-action-btn secondary" onClick={handleSingleRecommendation} disabled={loadingSingle}>
+              {loadingSingle ? <Loader2 size={18} className="spin" /> : <Sparkle size={18} />}
+              <span>Recomendar</span>
+            </button>
+          </>
         )}
         {spotifyConnected && songs.length > 0 && (
-          <button className="lv-prime-btn secondary" onClick={handleExportSpotify} disabled={exporting}>
-            {exporting ? <Loader2 size={18} className="spin" /> : <Share2 size={18} />}
-            Spotify
-          </button>
-        )}
-        {isOwner && (
-          <button className="lv-prime-btn secondary" onClick={handleDeleteList} disabled={deleting} title={t('common.delete')}>
-            <Trash2 size={18} />
+          <button className="lv-action-btn spotify" onClick={handleExportSpotify} disabled={exporting}>
+            {exporting ? <Loader2 size={18} className="spin" /> : <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-1.68c-.06.3-.24.54-.54.6-4.38 1.92-10.26 2.399-14.82 1.16-.42-.12-.841-.24-1.26-.3-.42-.12-.72-.54-.6-.9.12-.421.48-.78 1.02-.6 4.86-1.2 11.28-1.02 15.12 1.2.3.06.54.24.6.54z"/></svg>}
+            <span>Crear Playlist</span>
           </button>
         )}
       </div>
+
+      {/* ── SINGLE RECOMMENDATION ── */}
+      {singleRec && (
+        <div className="lv-single-rec">
+          <div className="lv-rec-header">
+            <Sparkle size={18} className="rec-sparkle" />
+            <span>Recomendación perfecta para ti</span>
+          </div>
+          <div className="lv-rec-content">
+            {singleRec.pelicula && (
+              <div className="lv-rec-item">
+                <Film size={20} />
+                <div className="lv-rec-info">
+                  <span className="lv-rec-label">Película</span>
+                  <span className="lv-rec-title">{singleRec.pelicula}</span>
+                </div>
+              </div>
+            )}
+            {singleRec.cancion && (
+              <div className="lv-rec-item">
+                <Music size={20} />
+                <div className="lv-rec-info">
+                  <span className="lv-rec-label">Canción</span>
+                  <span className="lv-rec-title">{singleRec.cancion}</span>
+                </div>
+              </div>
+            )}
+          </div>
+          {singleRec.motivo && (
+            <p className="lv-rec-reason">{singleRec.motivo}</p>
+          )}
+          <button className="lv-rec-close" onClick={() => setSingleRec(null)}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="lv-content-section">
         {/* Magic Drawer */}
@@ -515,7 +589,7 @@ const ListView = () => {
               <h2 className="section-title"><Film size={18} /> {t('lists.movies')}</h2>
               <div className="lv-items-grid">
                 {movies.map(item => (
-                  <ItemCard key={item.id} item={item} canEdit={canEdit} onRemove={handleRemoveItem} />
+                  <ItemCard key={item.id} item={item} canEdit={canEdit} onRemove={handleRemoveItem} t={t} />
                 ))}
               </div>
             </div>
@@ -526,7 +600,7 @@ const ListView = () => {
               <h2 className="section-title"><Music size={18} /> {t('lists.songs')}</h2>
               <div className="lv-items-grid">
                 {songs.map(item => (
-                  <ItemCard key={item.id} item={item} canEdit={canEdit} onRemove={handleRemoveItem} />
+                  <ItemCard key={item.id} item={item} canEdit={canEdit} onRemove={handleRemoveItem} t={t} />
                 ))}
               </div>
             </div>

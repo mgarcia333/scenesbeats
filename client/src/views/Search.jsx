@@ -1,16 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MovieCard, SongCard } from '../components/Cards';
-import { movieApi, spotifyApi, socialApi } from '../api';
+import { movieApi, spotifyApi, socialApi, nodeApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { socket } from '../App';
 import { 
   Search as SearchIcon, Clapperboard, Music, 
-  Users, UserPlus, Star, Info, User, Check
+  Users, UserPlus, Star, User, Check, X, Clock
 } from 'lucide-react';
-import LoadingDots from '../components/LoadingDots';
 
-const PersonCard = ({ person }) => (
+const STORAGE_KEY = 'sb_recent_searches';
+const MAX_RECENT = 8;
+
+const getRecentSearches = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+};
+
+const saveRecentSearch = (term, type) => {
+  const recent = getRecentSearches();
+  const newEntry = { term, type, timestamp: Date.now() };
+  const filtered = recent.filter(r => r.term !== term);
+  const updated = [newEntry, ...filtered].slice(0, MAX_RECENT);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+};
+
+const clearRecentSearches = () => {
+  localStorage.removeItem(STORAGE_KEY);
+};
+
+const PersonCard = ({ person, t }) => (
   <div className="person-card animate-fadeIn">
     <div className="person-img-box">
       {person.image ? (
@@ -27,7 +48,7 @@ const PersonCard = ({ person }) => (
   </div>
 );
 
-const UserSearchResultCard = ({ result, onAdd }) => {
+const UserSearchResultCard = ({ result, onAdd, t }) => {
   const [sent, setSent] = useState(false);
   
   const handleAdd = async () => {
@@ -55,7 +76,7 @@ const UserSearchResultCard = ({ result, onAdd }) => {
   );
 };
 
-const ArtistCard = ({ artist }) => (
+const ArtistCard = ({ artist, t }) => (
   <div className="person-card animate-fadeIn">
     <div className="person-img-box artist">
       {artist.image ? (
@@ -71,6 +92,23 @@ const ArtistCard = ({ artist }) => (
   </div>
 );
 
+const RecentSearchItem = ({ item, onClick, onDelete }) => {
+  const icon = item.type === 'movies' ? <Clapperboard size={14} /> :
+               item.type === 'music' ? <Music size={14} /> :
+               item.type === 'people' ? <Star size={14} /> :
+                                       <User size={14} />;
+  
+  return (
+    <div className="recent-search-item" onClick={() => onClick(item.term, item.type)}>
+      <span className="recent-search-icon">{icon}</span>
+      <span className="recent-search-term">{item.term}</span>
+      <button className="recent-search-delete" onClick={(e) => { e.stopPropagation(); onDelete(item.term); }}>
+        <X size={12} />
+      </button>
+    </div>
+  );
+};
+
 const Search = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -78,8 +116,9 @@ const Search = () => {
   const [searchType, setSearchType] = useState('movies'); 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(getRecentSearches);
 
-  const handleSearch = async (term = searchTerm) => {
+  const handleSearch = async (term = searchTerm, type = searchType) => {
     if (!term.trim()) {
       setResults([]);
       return;
@@ -87,7 +126,7 @@ const Search = () => {
     setLoading(true);
     try {
       let res;
-      switch (searchType) {
+      switch (type) {
         case 'movies':
           res = await movieApi.search(term);
           setResults(res.data);
@@ -112,12 +151,13 @@ const Search = () => {
           break;
         case 'users':
           res = await socialApi.searchUsers(term);
-          // Filter out self
           setResults(res.data.filter(u => String(u.id) !== String(user.id)));
           break;
         default:
           break;
       }
+      saveRecentSearch(term, type);
+      setRecentSearches(getRecentSearches());
     } catch (err) {
       console.error("Search error:", err);
     } finally {
@@ -131,7 +171,6 @@ const Search = () => {
         sender_id: user.id,
         recipient_id: friendId
       });
-      // Emit socket event for real-time notification
       socket.emit('friend_request', {
         from: user.name,
         toId: friendId
@@ -141,12 +180,29 @@ const Search = () => {
     }
   };
 
+  const handleRecentClick = (term, type) => {
+    setSearchTerm(term);
+    setSearchType(type);
+  };
+
+  const handleRecentDelete = (term) => {
+    const updated = recentSearches.filter(r => r.term !== term);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    setRecentSearches(updated);
+  };
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      handleSearch();
+      handleSearch(searchTerm, searchType);
     }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, searchType]);
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      handleSearch(searchTerm.trim(), searchType);
+    }
+  };
 
   return (
     <div className="view-container">
@@ -159,54 +215,80 @@ const Search = () => {
             placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleInputKeyDown}
           />
         </div>
 
-        <div className="search-tabs-scroll">
-          <div className="search-tabs">
-            <button className={`search-tab ${searchType === 'movies' ? 'active' : ''}`} onClick={() => setSearchType('movies')}>
-              <Clapperboard size={16} /> {t('search.movies')}
-            </button>
-            <button className={`search-tab ${searchType === 'music' ? 'active' : ''}`} onClick={() => setSearchType('music')}>
-              <Music size={16} /> {t('search.music')}
-            </button>
-            <button className={`search-tab ${searchType === 'people' ? 'active' : ''}`} onClick={() => setSearchType('people')}>
-              <Star size={16} /> {t('search.people')}
-            </button>
-            <button className={`search-tab ${searchType === 'artists' ? 'active' : ''}`} onClick={() => setSearchType('artists')}>
-              <Users size={16} /> {t('search.artists')}
-            </button>
-            <button className={`search-tab ${searchType === 'users' ? 'active' : ''}`} onClick={() => setSearchType('users')}>
-              <User size={16} /> {t('search.users')}
-            </button>
+        <div className="search-type-slider">
+          <div className="search-type-track">
+            {['movies', 'music', 'people', 'artists', 'users'].map(type => (
+              <button
+                key={type}
+                className={`search-type-btn ${searchType === type ? 'active' : ''}`}
+                onClick={() => setSearchType(type)}
+              >
+                {type === 'movies' && <Clapperboard size={16} />}
+                {type === 'music' && <Music size={16} />}
+                {type === 'people' && <Star size={16} />}
+                {type === 'artists' && <Users size={16} />}
+                {type === 'users' && <User size={16} />}
+              </button>
+            ))}
           </div>
         </div>
+
+        {!searchTerm && recentSearches.length > 0 && (
+          <div className="recent-searches-section">
+            <div className="recent-searches-header">
+              <Clock size={14} />
+              <span>Recientes</span>
+              <button className="recent-clear-all" onClick={clearRecentSearches}>
+                <X size={12} />
+              </button>
+            </div>
+            <div className="recent-searches-list">
+              {recentSearches.map((item, idx) => (
+                <RecentSearchItem
+                  key={idx}
+                  item={item}
+                  onClick={handleRecentClick}
+                  onDelete={handleRecentDelete}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="search-results">
+        <div className="search-results">
         {loading ? (
           <div className="search-loading">
-            <LoadingDots />
-            <span>Buscando en la galaxia...</span>
+            <div className="loading-spinner"></div>
+            <span>Cargando resultados...</span>
           </div>
         ) : results.length > 0 ? (
-          <div className={searchType === 'movies' || searchType === 'music' ? 'results-grid' : 'social-results-list'}>
+          <div className={searchType === 'movies' || searchType === 'music' ? 'results-grid' : 'results-list'}>
             {results.map((item, idx) => {
               if (searchType === 'movies') return <MovieCard key={item.id + idx} movie={item} />;
               if (searchType === 'music') return <SongCard key={item.id + idx} song={item} />;
-              if (searchType === 'people') return <PersonCard key={item.id + idx} person={item} />;
-              if (searchType === 'artists') return <ArtistCard key={item.id + idx} artist={item} />;
-              if (searchType === 'users') return <UserSearchResultCard key={item.id + idx} result={item} onAdd={handleAddFriend} />;
+              if (searchType === 'people') return <PersonCard key={item.id + idx} person={item} t={t} />;
+              if (searchType === 'artists') return <ArtistCard key={item.id + idx} artist={item} t={t} />;
+              if (searchType === 'users') return <UserSearchResultCard key={item.id + idx} result={item} onAdd={handleAddFriend} t={t} />;
               return null;
             })}
           </div>
         ) : searchTerm ? (
-          <div className="empty-state">{t('search.noResults', { query: searchTerm })}</div>
+          <div className="empty-state">
+            <SearchIcon size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+            <p>No se encontraron resultados para "{searchTerm}"</p>
+          </div>
         ) : (
           <div className="search-placeholder-full">
-            <SearchIcon size={64} style={{ opacity: 0.1, marginBottom: '2rem' }} />
-            <h2>{t('search.exploreTitle')}</h2>
-            <p className="text-muted">{t('search.exploreSubtitle')}</p>
+            <div className="search-placeholder-icon">
+              <SearchIcon size={40} />
+            </div>
+            <h3>Explora películas, música y más</h3>
+            <p className="text-muted" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Busca por título, artista, actor o usuario</p>
           </div>
         )}
       </div>

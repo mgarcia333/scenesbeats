@@ -1,6 +1,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+const renderStars = (rating) => {
+  if (!rating) return null;
+  const numericRating = parseFloat(rating);
+  const fullStars = Math.floor(numericRating);
+  const hasHalf = numericRating % 1 !== 0;
+  
+  return (
+    <div className="stars-container">
+      {"★".repeat(fullStars)}{hasHalf ? "½" : ""}
+    </div>
+  );
+};
+
 export const MovieCard = ({ movie, isDragging }) => (
   <div className="movie-card" style={{ userSelect: 'none' }}>
     <Link 
@@ -17,6 +30,7 @@ export const MovieCard = ({ movie, isDragging }) => (
     <div className="movie-name" title={movie.title || movie.name}>{movie.title || movie.name}</div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div className="movie-year">{movie.year}</div>
+      {movie.rating && renderStars(movie.rating)}
     </div>
   </div>
 );
@@ -31,7 +45,7 @@ export const SongCard = ({ song, isDragging }) => (
   >
     <Link to={`/song/${song.id}`}>
       <img 
-        src={song.artwork} 
+        src={song.artwork || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop"} 
         alt={song.name} 
         className="song-artwork" 
         draggable="false"

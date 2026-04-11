@@ -190,6 +190,7 @@
     "requests": "Requests",
     "suggestions": "Suggestions",
     "suggestionsDesc": "Search for other cinephiles and music lovers to connect.",
+    "noSuggestions": "No suggestions available at the moment.",
     "listened": "listened to",
     "watched": "watched",
     "createdList": "created the list",

@@ -71,7 +71,9 @@ const Community = () => {
   const [activities, setActivities] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [friends, setFriends] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingRequest, setSendingRequest] = useState(null); // ID of user being followed
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,14 +106,16 @@ const Community = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [actRes, pendRes, friendsRes] = await Promise.all([
+      const [actRes, pendRes, friendsRes, suggRes] = await Promise.all([
         socialApi.getActivities(),
-        user ? socialApi.getPendingRequests(user.id) : Promise.resolve({ data: [] }),
-        user ? socialApi.getFriends(user.id) : Promise.resolve({ data: [] })
+        user?.id ? socialApi.getPendingRequests(user.id) : Promise.resolve({ data: [] }),
+        user?.id ? socialApi.getFriends(user.id) : Promise.resolve({ data: [] }),
+        user?.id && typeof user.id === 'number' ? socialApi.getSuggestions(user.id) : Promise.resolve({ data: [] })
       ]);
       setActivities(actRes.data);
       setPendingRequests(pendRes.data);
       setFriends(friendsRes.data);
+      setSuggestions(suggRes.data);
     } catch (err) {
       console.error("Error fetching community data:", err);
     } finally {
@@ -126,6 +130,24 @@ const Community = () => {
       if (status === 'accepted') fetchData();
     } catch (err) {
       console.error("Error updating request:", err);
+    }
+  };
+
+  const handleSendRequest = async (recipientId) => {
+    if (sendingRequest) return;
+    setSendingRequest(recipientId);
+    try {
+      await socialApi.sendRequest({
+        sender_id: user.id,
+        recipient_id: recipientId
+      });
+      // Refresh suggestions
+      const suggRes = await socialApi.getSuggestions(user.id);
+      setSuggestions(suggRes.data);
+    } catch (err) {
+      console.error("Error sending friend request:", err);
+    } finally {
+      setSendingRequest(null);
     }
   };
 
@@ -214,8 +236,36 @@ const Community = () => {
 
           <div className="sidebar-section">
             <h2 className="section-title">{t('community.suggestions')}</h2>
-            <div className="suggestions-box">
-              <p className="text-muted small">{t('community.suggestionsDesc')}</p>
+            <div className="suggestions-list">
+              {suggestions.length > 0 ? (
+                suggestions.map(person => (
+                  <div key={person.id} className="sidebar-friend-card">
+                    <div className="friend-info-group">
+                      <img 
+                        src={person.avatar || `https://ui-avatars.com/api/?name=${person.name}`} 
+                        className="user-avatar-sm" 
+                        alt="" 
+                      />
+                      <span className="friend-name">{person.name}</span>
+                    </div>
+                    <button 
+                      className="chat-link-btn" 
+                      onClick={() => handleSendRequest(person.id)}
+                      title={t('community.sendRequest')}
+                      disabled={sendingRequest === person.id}
+                      style={{ opacity: sendingRequest === person.id ? 0.5 : 1 }}
+                    >
+                      {sendingRequest === person.id ? (
+                        <div className="fighting-dots-sm" style={{ width: '16px', height: '16px' }} />
+                      ) : (
+                        <UserPlus size={16} />
+                      )}
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted small">{t('community.noSuggestions') || 'No hay sugerencias disponibles'}</p>
+              )}
             </div>
           </div>
         </div>

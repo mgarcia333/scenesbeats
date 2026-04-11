@@ -59,6 +59,8 @@ Route::get('/users/search', function (Request $request) {
         ->get();
 });
 
+Route::get('/users/suggestions', [\App\Http\Controllers\Api\UserController::class, 'suggestions']);
+
 Route::get('/users/{id}', function ($id) {
     return App\Models\User::with(['lists'])->findOrFail($id);
 });

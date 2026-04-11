@@ -6,19 +6,20 @@ import { socialApi, spotifyApi, movieApi, favoritesApi, listsApi } from '../api'
 import {
   Music, Film, Star, PlusCircle, Circle, Check, Plus,
   X, ExternalLink, RefreshCw, LogOut, Radio, List as ListIcon,
-  Search, Trash2
+  Search, Trash2, Clock, Flame
 } from 'lucide-react';
 import LoadingDots from '../components/LoadingDots';
 import HorizontalScroll from '../components/HorizontalScroll';
 
 /* ─────────────────────────────────────────────
    Favorite Search Modal
-───────────────────────────────────────────── */
+──────────────────────────────────────────── */
 const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -27,74 +28,94 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
 
   const handleSearch = async (val) => {
     setQuery(val);
+    
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
     if (val.length < 2) {
       setResults([]);
       return;
     }
-    setLoading(true);
-    try {
-      let res;
-      switch (type) {
-        case 'movie_fav':
-          res = await movieApi.search(val);
-          setResults(res.data.map(m => ({
-            id: m.id,
-            title: m.title,
-            subtitle: m.year,
-            image: m.poster
-          })));
-          break;
-        case 'actor_fav':
-        case 'director_fav':
-          res = await movieApi.searchPeople(val);
-          setResults(res.data.map(p => ({
-            id: p.id,
-            title: p.name,
-            subtitle: p.known_for,
-            image: p.image
-          })));
-          break;
-        case 'song_fav':
-          res = await spotifyApi.searchTracks(val);
-          setResults(res.data.map(t => ({
-            id: t.id,
-            title: t.name,
-            subtitle: t.artist,
-            image: t.image
-          })));
-          break;
-        case 'album_fav':
-          res = await spotifyApi.searchAlbums(val);
-          setResults(res.data.map(a => ({
-            id: a.id,
-            title: a.name,
-            subtitle: a.artist,
-            image: a.image
-          })));
-          break;
-        case 'artist_fav':
-          res = await spotifyApi.searchArtists(val);
-          setResults(res.data.map(a => ({
-            id: a.id,
-            title: a.name,
-            subtitle: a.genres,
-            image: a.image
-          })));
-          break;
-        default:
-          setResults([]);
+    
+    // Debounce search
+    const timeout = setTimeout(async () => {
+      setLoading(true);
+      try {
+        let res;
+        switch (type) {
+          case 'movie_fav':
+            res = await movieApi.search(val);
+            setResults(res.data.map(m => ({
+              id: m.id,
+              title: m.title,
+              subtitle: m.year,
+              image: m.poster
+            })));
+            break;
+          case 'actor_fav':
+          case 'director_fav':
+            res = await movieApi.searchPeople(val);
+            setResults(res.data.map(p => ({
+              id: p.id,
+              title: p.name,
+              subtitle: p.known_for,
+              image: p.image
+            })));
+            break;
+          case 'song_fav':
+            res = await spotifyApi.searchTracks(val);
+            setResults(res.data.map(t => ({
+              id: t.id,
+              title: t.name,
+              subtitle: t.artist,
+              image: t.image
+            })));
+            break;
+          case 'album_fav':
+            res = await spotifyApi.searchAlbums(val);
+            setResults(res.data.map(a => ({
+              id: a.id,
+              title: a.name,
+              subtitle: a.artist,
+              image: a.image
+            })));
+            break;
+          case 'artist_fav':
+            res = await spotifyApi.searchArtists(val);
+            setResults(res.data.map(a => ({
+              id: a.id,
+              title: a.name,
+              subtitle: a.genres,
+              image: a.image
+            })));
+            break;
+          default:
+            setResults([]);
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        setResults([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Search error:", err);
-    } finally {
-      setLoading(false);
-    }
+    }, 400);
+    
+    setSearchTimeout(timeout);
   };
 
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+    };
+  }, [searchTimeout]);
+
   const selectItem = async (item) => {
+    if (loading) return;
     setLoading(true);
     try {
-      await onSave({
+      const success = await onSave({
         user_id: userId,
         type,
         position,
@@ -103,9 +124,12 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
         subtitle: item.subtitle,
         image_url: item.image
       });
-      onClose();
+      if (success) {
+        onClose();
+      }
     } catch (err) {
       console.error("Save error:", err);
+      alert('Error al guardar: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -115,37 +139,37 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card favorite-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Buscar Favorito</h3>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+          <h3 className="modal-title">Buscar</h3>
+          <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
 
-        <div className="search-box-wrapper" style={{ margin: '1rem 0' }}>
-          <Search size={18} className="search-icon-inside" />
+        <div className="fav-search-box">
+          <Search size={14} className="fav-search-icon" />
           <input
             ref={inputRef}
             type="text"
-            className="modal-input search-input-clean"
-            placeholder="Escribe para buscar..."
+            className="fav-search-input"
+            placeholder="Buscar..."
             value={query}
             onChange={e => handleSearch(e.target.value)}
+            autoComplete="off"
           />
         </div>
 
-        <div className="search-results-mini">
-          {loading && <div className="loading-inline"><LoadingDots className="mini-loader" /> {t('search.searching')}</div>}
+        <div className="fav-search-results">
+          {loading && <div className="loading-inline"><LoadingDots className="mini-loader" /></div>}
+          {!loading && results.length === 0 && query.length >= 2 && (
+            <p className="text-muted small" style={{ textAlign: 'center', padding: '1rem' }}>Sin resultados</p>
+          )}
           {!loading && results.map(item => (
-            <div key={item.id} className="search-result-row" onClick={() => selectItem(item)}>
-              <img src={item.image || 'https://placehold.co/40/1a1a1a/ffffff?text=?'} alt="" className="result-mini-img" />
-              <div className="result-mini-info">
-                <div className="result-mini-title">{item.title}</div>
-                <div className="result-mini-subtitle">{item.subtitle}</div>
+            <div key={item.id} className="fav-result-row" onClick={() => selectItem(item)}>
+              <img src={item.image || 'https://placehold.co/36/1a1a1a/ffffff?text=?'} alt="" className="fav-result-img" />
+              <div className="fav-result-info">
+                <div className="fav-result-title">{item.title}</div>
+                <div className="fav-result-sub">{item.subtitle}</div>
               </div>
-              <Plus size={16} className="add-icon" />
             </div>
           ))}
-          {!loading && query.length >= 2 && results.length === 0 && (
-            <p className="text-muted small" style={{ textAlign: 'center', padding: '1rem' }}>{t('search.noResults', { query })}</p>
-          )}
         </div>
       </div>
     </div>
@@ -273,6 +297,10 @@ const Profile = () => {
   const [showLBModal, setShowLBModal] = useState(false);
   const [spotifyJustConnected, setSpotifyJustConnected] = useState(false);
 
+  // Stats counts
+  const [spotifyTodayCount, setSpotifyTodayCount] = useState(0);
+  const [letterboxdThisMonth, setLetterboxdThisMonth] = useState(0);
+
   // Real user content
   const [myLists, setMyLists] = useState([]);
   const [loadingLists, setLoadingLists] = useState(false);
@@ -311,7 +339,23 @@ const Profile = () => {
     if (!user?.letterboxd_username) return;
     setLoadingLB(true);
     movieApi.getLetterboxd(user.letterboxd_username)
-      .then(res => setLbMovies(res.data))
+      .then(res => {
+        const movies = res.data || [];
+        setLbMovies(movies);
+        
+        // Count movies this month
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+        
+        const moviesThisMonth = movies.filter(movie => {
+          if (!movie.watched_date) return false;
+          const watchedDate = new Date(movie.watched_date);
+          return watchedDate.getMonth() === thisMonth && watchedDate.getFullYear() === thisYear;
+        });
+        
+        setLetterboxdThisMonth(moviesThisMonth.length);
+      })
       .catch(() => setLbMovies([]))
       .finally(() => setLoadingLB(false));
   }, [user?.letterboxd_username]);
@@ -320,10 +364,21 @@ const Profile = () => {
   useEffect(() => {
     if (!spotifyConnected) return;
     setLoadingSpotify(true);
-    spotifyApi.getRecentlyPlayed(20)
+    spotifyApi.getRecentlyPlayed(50)
       .then(res => {
         if (res.data?.items) {
-          setRecentSongs(res.data.items.map(item => ({
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const songsToday = res.data.items.filter(item => {
+            const playedAt = new Date(item.played_at);
+            playedAt.setHours(0, 0, 0, 0);
+            return playedAt.getTime() === today.getTime();
+          });
+          
+          setSpotifyTodayCount(songsToday.length);
+          
+          setRecentSongs(res.data.items.slice(0, 20).map(item => ({
             id: item.track.id,
             name: item.track.name,
             artist: item.track.artists[0].name,
@@ -383,18 +438,37 @@ const Profile = () => {
     // Fetch favorites
     setLoadingFavs(true);
     favoritesApi.getAll(user.id)
-      .then(res => setMyFavorites(res.data || []))
-      .catch(() => setMyFavorites([]))
+      .then(res => {
+        console.log('Favorites loaded:', res.data);
+        setMyFavorites(res.data || []);
+      })
+      .catch(err => {
+        console.error('Error loading favorites:', err);
+        setMyFavorites([]);
+      })
       .finally(() => setLoadingFavs(false));
   }, [user?.id]);
 
   const handleSaveFavorite = async (data) => {
-    const res = await favoritesApi.save(data);
-    // Update local state
-    setMyFavorites(prev => {
-      const filtered = prev.filter(f => !(f.type === data.type && f.position === data.position));
-      return [...filtered, res.data];
-    });
+    console.log('Saving favorite:', data);
+    try {
+      const res = await favoritesApi.save(data);
+      console.log('Saved favorite response:', res.data);
+      // Update local state - add the new favorite to existing ones
+      setMyFavorites(prev => {
+        // Remove any existing favorite in same slot (same type and position)
+        const filtered = prev.filter(f => !(f.type === data.type && f.position === data.position));
+        // Add new favorite
+        const updated = [...filtered, res.data];
+        console.log('Updated favorites:', updated);
+        return updated;
+      });
+      return true; // Signal success
+    } catch (err) {
+      console.error("Save favorite error:", err);
+      alert('Error al guardar favorito: ' + (err.response?.data?.message || err.message));
+      return false;
+    }
   };
 
   const handleRemoveFavorite = async (e, id) => {
@@ -413,27 +487,23 @@ const Profile = () => {
 
   const FavoriteSlot = ({ type, position }) => {
     const fav = getFavoriteAt(type, position);
+    const isPerson = type === 'actor_fav' || type === 'director_fav';
+    const isMedia = type === 'movie_fav' || type === 'song_fav' || type === 'album_fav';
     
     if (fav) {
       return (
-        <div className="fav-mini-card occupied" onClick={() => setActiveSlot({ type, position })}>
-          <img src={fav.image_url || 'https://placehold.co/80/1a1a1a/ffffff?text=?'} alt="" className="fav-mini-img" />
-          <div className="fav-mini-info">
-            <div className="fav-mini-title">{fav.title}</div>
-            {fav.subtitle && <div className="fav-mini-subtitle">{fav.subtitle}</div>}
-          </div>
+        <div className={`fav-slot-item ${isPerson ? 'person' : ''} ${isMedia ? 'media' : ''}`} onClick={() => setActiveSlot({ type, position })}>
+          <img src={fav.image_url || 'https://placehold.co/80/1a1a1a/ffffff?text=?'} alt="" className="fav-slot-img" />
           <button className="remove-fav-btn" onClick={(e) => handleRemoveFavorite(e, fav.id)}>
-            <X size={12} />
+            <X size={10} />
           </button>
         </div>
       );
     }
 
     return (
-      <div className="fav-mini-card empty-slot" onClick={() => setActiveSlot({ type, position })}>
-        <div className="empty-slot-content">
-          <Plus size={18} />
-        </div>
+      <div className={`fav-slot-item empty ${isPerson ? 'person' : ''} ${isMedia ? 'media' : ''}`} onClick={() => setActiveSlot({ type, position })}>
+        <Plus size={16} />
       </div>
     );
   };
@@ -444,7 +514,7 @@ const Profile = () => {
         <h3 className="gusto-category-title">
           <IconComponent size={14} /> <span>{title}</span>
         </h3>
-        <div className="gusto-grid">
+        <div className="gusto-row">
           {[1, 2, 3, 4].map(pos => <FavoriteSlot key={`${type}-${pos}`} type={type} position={pos} />)}
         </div>
       </div>
@@ -482,7 +552,11 @@ const Profile = () => {
   ];
 
   return (
-    <div className="view-container">
+    <div className="view-container profile-view">
+      <button className="profile-logout-btn" onClick={handleLogout} title={t('auth.logout') || 'Cerrar Sesión'}>
+        <LogOut size={20} />
+      </button>
+
       {/* ── Profile header ── */}
       <div className="profile-header">
         {/* Avatar */}
@@ -494,39 +568,39 @@ const Profile = () => {
               {user?.name?.charAt(0).toUpperCase()}
             </div>
           )}
-
-          {/* Now Playing Widget */}
-          {currentlyPlaying && (
-            <div className="now-playing-badge animate-fadeIn">
-              <div className="np-pulse">
-                <Radio size={12} />
-              </div>
-              <div className="np-info">
-                <span className="np-label">{t('profile.listeningNow')}</span>
-                <span className="np-track">{currentlyPlaying.name}</span>
-              </div>
-            </div>
-          )}
-
-          <button className="profile-logout-fab" onClick={handleLogout} title={t('auth.logout') || 'Cerrar Sesión'}>
-            <LogOut size={18} />
-          </button>
         </div>
+
+        {/* Now Playing - visible when something is playing */}
+        {currentlyPlaying && (
+          <div className="now-playing-bar animate-fadeIn">
+            <Music size={16} className="np-icon" />
+            <div className="np-track-info">
+              <span className="np-track-name">{currentlyPlaying.name}</span>
+              <span className="np-artist-name">{currentlyPlaying.artist}</span>
+            </div>
+          </div>
+        )}
 
         {/* Info */}
         <div className="profile-info-main">
           <h2 className="profile-name-large">{user?.name}</h2>
           <p className="hero-subtitle" style={{ marginBottom: '0.5rem' }}>{user?.email}</p>
 
-          {/* Stats */}
+          {/* Stats con counts dinámicos */}
           <div className="profile-stats">
-            <div className="stat-item">
-              <span className="stat-value">{lbMovies.length || 0}</span>
-              <span className="stat-label">{t('profile.movies')}</span>
+            <div className="stat-item highlight">
+              <Flame size={16} className="stat-icon" />
+              <div className="stat-content">
+                <span className="stat-value">{spotifyTodayCount}</span>
+                <span className="stat-label">canciones hoy</span>
+              </div>
             </div>
-            <div className="stat-item">
-              <span className="stat-value">{recentSongs.length || 0}</span>
-              <span className="stat-label">{t('profile.songs')}</span>
+            <div className="stat-item highlight">
+              <Film size={16} className="stat-icon" />
+              <div className="stat-content">
+                <span className="stat-value">{letterboxdThisMonth}</span>
+                <span className="stat-label">películas este mes</span>
+              </div>
             </div>
             <div className="stat-item">
               <span className="stat-value">{friends.length || 0}</span>
@@ -567,11 +641,11 @@ const Profile = () => {
         <h2 className="section-title">{t('profile.myTastes')}</h2>
         <div className="gustos-container">
           <GustoSection title={t('profile.movies')} type="movie_fav" icon={Film} />
-          <GustoSection title={t('profile.actors')} type="actor_fav" icon={Star} />
-          <GustoSection title={t('profile.directors')} type="director_fav" icon={Circle} />
           <GustoSection title={t('profile.songs')} type="song_fav" icon={Music} />
           <GustoSection title={t('profile.albums')} type="album_fav" icon={Radio} />
           <GustoSection title={t('profile.artists')} type="artist_fav" icon={Music} />
+          <GustoSection title={t('profile.actors')} type="actor_fav" icon={Star} />
+          <GustoSection title={t('profile.directors')} type="director_fav" icon={Circle} />
           
           {!loadingFavs && myFavorites.length === 0 && (
             <p className="text-muted small">{t('profile.noTastes')}</p>

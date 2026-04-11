@@ -189,6 +189,7 @@
     "requests": "Sol·licituds",
     "suggestions": "Suggeriments",
     "suggestionsDesc": "Busca a altres cinèfils i melòmans per connectar.",
+    "noSuggestions": "No hi ha suggeriments disponibles en aquest moment.",
     "listened": "ha escoltat",
     "watched": "ha vist",
     "createdList": "ha creat una nova llista:",
