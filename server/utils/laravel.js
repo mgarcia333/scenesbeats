@@ -32,6 +32,18 @@ export const saveChatMessage = async (roomId, data) => {
 };
 
 /**
+ * Save an activity (like a Spotify play) to the Laravel backend.
+ */
+export const saveActivity = async (data) => {
+    try {
+        const response = await laravelApi.post('/activities', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error saving activity to Laravel:', error.response?.data || error.message);
+    }
+};
+
+/**
  * Synchronize a user authenticated via Spotify with the Laravel backend.
  */
 export const syncUserWithLaravel = async (userData) => {
