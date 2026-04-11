@@ -21,7 +21,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://127.0.0.1:5171", "http://localhost:5171"],
+    origin: [process.env.FRONTEND_URL, "http://127.0.0.1:5171", "http://localhost:5171"],
     credentials: true,
   }
 });
@@ -31,7 +31,7 @@ const userSockets = new Map(); // userId -> set of socket IDs
 
 app.use(
   cors({
-    origin: ["http://127.0.0.1:5171", "http://localhost:5171"],
+    origin: [process.env.FRONTEND_URL, "http://127.0.0.1:5171", "http://localhost:5171"],
     credentials: true,
   }),
 );
