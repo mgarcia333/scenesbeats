@@ -225,10 +225,6 @@ const Lists = () => {
             <ListMusic size={48} style={{ opacity: 0.3 }} />
           </div>
           <p className="lists-empty-text">{t('lists.empty')}</p>
-          <button className="rec-button" style={{ padding: '0.75rem 2rem' }} onClick={() => setShowCreate(true)}>
-            <Plus size={16} style={{ marginRight: '0.5rem' }} />
-            {t('lists.newList')}
-          </button>
         </div>
       ) : (
         <div className="lists-grid">
