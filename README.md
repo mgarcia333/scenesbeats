@@ -1,75 +1,122 @@
-# ScenesBeats
+# ScenesBeats - Platform Documentation
 
-ScenesBeats is a web application that recommends movies based on your current musical mood on Spotify, powered by Google Gemini AI.
+ScenesBeats is a high-performance, social media platform designed for media enthusiasts. It integrates real-time interactions, collaborative media management, and advanced AI-driven recommendation engines to provide a unique social experience around cinema and music.
 
-## Key Features
+## Production Environment
 
-- **Spotify Integration**: Connect your Spotify account to analyze your recently played tracks.
-- **AI Recommendations**: Uses Google Gemini (gemini-2.5-flash) to find the perfect movie vibe.
-- **Movie Details**: Integration with TMDB to show synopses and posters.
-- **Real-time Updates**: Socket.IO integration for live interactions.
+The platform is deployed and accessible via the following entry points:
 
-## Tech Stack
+- **Frontend Application**: [https://scenesbeats.com](https://scenesbeats.com)
 
-- **Frontend**: React, Vite, Tailwind CSS, Framer Motion.
-- **Backend**: Node.js, Express, Socket.IO.
-- **AI**: Google Generative AI (Gemini).
-- **APIs**: Spotify API, TMDB API.
+## Technical Architecture
 
-## Project Structure
+The system follows a modern microservices-inspired architecture designed for scalability and real-time responsiveness:
 
-```text
-├── client/          # React frontend
-├── server/          # Node.js backend
-├── docker-compose.yml
-└── README.md
-```
+### 1. REST API Layer (Laravel 11)
 
-## Getting Started
+- **Role**: Core business logic, data persistence, and user authentication.
+- **Technology**: PHP 8.2+, Laravel 11.
+- **Responsibilities**:
+  - Manage User Profiles and Social Graphs (Friendships).
+  - CRUD operations for Media Lists and Favorites.
+  - Transactional data management.
+  - Triggering real-time broadcasts via the Node.js bridge.
 
-### Prerequisites
+### 2. Real-Time & Integration Layer (Node.js)
 
-- Node.js (v18+)
-- Docker (optional)
-- Spotify Developer Account (for Client ID/Secret)
-- Google AI Studio Key (for Gemini)
-- TMDB API Key
+- **Role**: State management for active users, Spotify synchronization, and WebSocket broadcasting.
+- **Technology**: Node.js 20+, Express, Socket.io.
+- **Responsibilities**:
+  - Managing persistent WebSocket connections.
+  - Real-time internal broadcasting engine (Internal API Bridge).
+  - Spotify playback monitoring and status updates.
+  - AI Recommendation processing offloading.
 
-### Manual Setup
+### 3. Intelligence Engine (Google Gemini AI)
 
-1. **Clone the repository**
-2. **Server Configuration**:
+- **Role**: Advanced data analysis for personalized recommendations.
+- **Technology**: Google Generative AI (Gemini 2.5 Flash).
+- **Functionality**: Analyzes user musical taste and movie history to generate hybrid recommendations with natural language rationales.
+
+### 4. Client Interface (React)
+
+- **Role**: Interactive user experience with high-fidelity design.
+- **Technology**: React 19, Vite, Tailwind CSS.
+- **Key Components**:
+  - Real-time Chat and Community Feed.
+  - Dynamic Media Explorers (TMDB & Spotify integration).
+  - Collaborative List Management.
+  - Real-time Global Notification System (Toasts).
+
+---
+
+## Core Features
+
+### Real-Time Social Ecosystem
+
+- **Instant Messaging**: Peer-to-peer chat with media sharing capabilities.
+- **Activity Feed**: Live updates of friend activities (favorites added, lists created, recommendations generated).
+- **Presence Tracking**: Global online/offline status indicators for all social interactions.
+- **Smart Notifications**: Non-blocking toast system for friend requests and social triggers.
+
+### Collaborative Media Management
+
+- **Shared Lists**: Users can invite friends to collaborate on movie or music collections in real-time.
+- **AI-Powered "Magic Complete"**: Automatically suggests media to complete a list based on its current theme and items.
+- **Spotify Export**: Conversion of curated music lists into native Spotify playlists.
+
+### Deep Third-Party Integrations
+
+- **Spotify**: Real-time playback status and interaction with user libraries.
+- **TMDB**: Comprehensive metadata retrieval for movies and TV shows.
+- **Letterboxd**: Integration of movie watching history and user statistics.
+
+---
+
+## Deployment and Infrastructure
+
+The project is containerized using Docker and orchestrated to ensure high availability:
+
+### Local Development
+
+1. **Repository Initialization**:
+
    ```bash
-   cd server
-   cp .env.example .env
-   # Update .env with your credentials
-   npm install
-   npm start
-   ```
-3. **Client Configuration**:
-   ```bash
-   cd client
-   cp .env.example .env
-   npm install
-   npm run dev
+   git clone https://github.com/mgarcia333/scenesbeats.git
    ```
 
-### Setup with Docker
+2. **Environment Configuration**:
+   Configure `.env` files in `client/`, `server/`, and `laravel-api/` based on the provided `.env.example` templates.
+
+3. **System Startup**:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+### Production Stack
+
+- **Web Server**: Nginx (Reverse Proxy and SSL termination).
+- **Database**: Dedicated high-performance instance.
+- **Process Management**: PM2 (for Node.js) and PHP-FPM.
+- **CI/CD**: Automated deployment pipeline for production stages.
+
+---
+
+## Maintenance and Testing
+
+The platform includes a suite of tests to ensure stability across layers:
+
+- **Frontend Testing**: `vitest` for React component validation.
+- **Backend Testing**: `jest` for Node.js logic.
+- **API Testing**: `PHPUnit` for Laravel business logic.
+
+Execute all tests from the root directory:
 
 ```bash
-docker-compose up --build
+npm test
 ```
 
-## Testing
+## Licensing
 
-```bash
-# Server tests
-cd server && npm test
-
-# Client tests
-cd client && npm test
-```
-
-## License
-
-MIT
+Copyright © 2026 ScenesBeats. All rights reserved.
+Detailed licensing terms are available upon request.

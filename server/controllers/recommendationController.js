@@ -168,7 +168,9 @@ export const generateRecommendation = async (req, res) => {
         3. PROFUNDIDAD: No recomiendes algo genérico. La recomendación debe sentir que fue hecha por alguien que ENTIENDE sus gustos profundamente.
         4. DIVERSIDAD EXTRAPLATAFORMA: Busca en todo el espectro - películas indie, clásicos, international, documentales, series, libros adaptada, etc.
         5. CALIDAD SOBE CANTIDAD: Una recomendación perfecta vale más que 10 genéricas.`,
-        rule: "Respuesta en JSON estricto, sin texto adicional fuera del JSON. Los campos 'vibra' y 'motivo' deben estar en ESPAÑOL profesional." 
+        rule: "Respuesta en JSON estricto, sin texto adicional fuera del JSON. Los campos 'vibra' y 'motivo' deben estar en ESPAÑOL profesional.",
+        exclusion_label: "ELEMENTOS PROHIBIDOS (NO RECOMIENDES ESTO):",
+        no_repeat_rule: "REGLA CRÍTICA DE NO REPETICIÓN: Bajo ninguna circunstancia recomiendes películas o canciones que ya estén en la lista de ELEMENTOS PROHIBIDOS o en los favoritos detallados arriba. Tu éxito depende de descubrir contenido NUEVO para el usuario." 
       },
       en: { 
         favs: "MY FAVORITES (Key profile information):", 
@@ -189,7 +191,9 @@ export const generateRecommendation = async (req, res) => {
         3. DEPTH: Don't recommend something generic. The recommendation should feel like it was made by someone who DEEPLY UNDERSTANDS their tastes.
         4. EXTRA-PLATFORM DIVERSITY: Look across the entire spectrum - indie films, classics, international, documentary, TV adaptations, etc.
         5. QUALITY OVER QUANTITY: One perfect recommendation is worth more than 10 generic ones.`,
-        rule: "Strict JSON response, no additional text outside the JSON. The 'vibra' and 'motivo' fields must be in professional ENGLISH." 
+        rule: "Strict JSON response, no additional text outside the JSON. The 'vibra' and 'motivo' fields must be in professional ENGLISH.",
+        exclusion_label: "PROHIBITED ELEMENTS (DO NOT RECOMMEND THESE):",
+        no_repeat_rule: "CRITICAL NO-REPETITION RULE: Under no circumstances recommend movies or songs that are already in the PROHIBITED ELEMENTS list or in the favorites detailed above. Your success depends on discovering NEW content for the user." 
       },
       ca: { 
         favs: "ELS MEUS PREFERITS (Informació clau del perfil de l'usuari):", 
@@ -203,14 +207,13 @@ export const generateRecommendation = async (req, res) => {
         
         DIRECTRIUS DE CURACIÓ EXHAUSTIVA:
         1. ANÀLISI MULTIDIMENSIONAL: Analitza TOTS els preferits de l'usuari (no només pel·lícules o cançons). Considera:
-           - Directors que admira (estil visual, temàtiques recurrents)
-           - Actors que tria (tipus de personatges, rang dramàtic)
-           - Gèneres musicals i artistes (so, lletres, era)
         2. PATRONS CREUATS: Busca connexions inesperades entre cinema i música. Els seus directors preferits tenen bandes sonores icòniques? Els seus actors actuen en pel·lícules amb bandes sonores memorables?
         3. PROFUNDITAT: No recomanis res genèric. La recomanació hauria de semblar feta per algú que ENTÈN profundament els seus gustos.
         4. DIVERSITAT EXTRA-PLATAFORMA: Busca a tot l'espectre - cinema independent, clàssics, internacionals, documentals, adaptacions, etc.
         5. QUALITAT SOBRE QUANTITAT: Una recomanació perfecta val més que 10 genèriques.`,
-        rule: "Resposta en JSON estricte, sense text addicional fora del JSON. Els camps 'vibra' i 'motivo' han d'estar en CATALÀ professional." 
+        rule: "Resposta en JSON estricte, sense text addicional fora del JSON. Els camps 'vibra' i 'motivo' han d'estar en CATALÀ professional.",
+        exclusion_label: "ELEMENTS PROHIBITS (NO RECOMANIS AIXÒ):",
+        no_repeat_rule: "REGLA CRÍTICA DE NO REPETICIÓ: Sota cap circumstància recomanis pel·lícules o cançons que ja estiguin a la llista d'ELEMENTS PROHIBITS o als preferits detallats anteriorment. El teu èxit depèn de descobrir contingut NOU per a l'usuari." 
       }
     };
 
@@ -220,18 +223,17 @@ export const generateRecommendation = async (req, res) => {
     const hasFavorites = favs.movies?.length > 0 || favs.songs?.length > 0 || favs.albums?.length > 0 || 
                          favs.artists?.length > 0 || favs.actors?.length > 0 || favs.directors?.length > 0;
     
-    if (hasFavorites) {
-      favoritesContext = `${l.favs}\n`;
-      if (favs.movies?.length > 0) favoritesContext += `- ${l.movies}: ${favs.movies.map(m => m.title).join(', ')}\n`;
-      if (favs.songs?.length > 0) favoritesContext += `- ${l.songs}: ${favs.songs.map(s => s.title).join(', ')}\n`;
-      if (favs.albums?.length > 0) favoritesContext += `- ${l.albums}: ${favs.albums.map(a => a.title).join(', ')}\n`;
-      if (favs.artists?.length > 0) favoritesContext += `- ${l.artists}: ${favs.artists.map(a => a.title).join(', ')}\n`;
-      if (favs.actors?.length > 0) favoritesContext += `- ${l.actors}: ${favs.actors.map(a => a.title).join(', ')}\n`;
-      if (favs.directors?.length > 0) favoritesContext += `- ${l.directors}: ${favs.directors.map(d => d.title).join(', ')}\n`;
     }
+    
+    // 1.1 Build exclusion context (Everything the user already knows)
+    let exclusionContext = `${l.exclusion_label}\n`;
+    if (favs.movies?.length > 0) exclusionContext += `- Películas ya conocidas: ${favs.movies.map(m => m.title).join(', ')}\n`;
+    if (favs.songs?.length > 0) exclusionContext += `- Canciones ya conocidas: ${favs.songs.map(s => s.title).join(', ')}\n`;
+    if (movieContext) exclusionContext += `- Vistas recientemente (Letterboxd): ${movieContext.replace(/\d+\./g, '').replace(/\n/g, ', ')}\n`;
+    if (trackContext) exclusionContext += `- Escuchadas recientemente (Spotify): ${trackContext.replace(/\d+\./g, '').replace(/\n/g, ', ')}\n`;
 
     // 2. Construct Dynamic Prompt
-    const baseSystem = `${l.system}\nREGLA DE ORO: ${l.rule}`;
+    const baseSystem = `${l.system}\nREGLA DE ORO: ${l.rule}\n${l.no_repeat_rule}`;
     
     let prompt = "";
     let outputFormat = "";
@@ -265,6 +267,7 @@ export const generateRecommendation = async (req, res) => {
         HISTORIAL MUSICAL RECIENTE DEL USUARIO:
         ${trackContext || "Básate en la esencia de sus favoritos detallados abajo."}
         ${favoritesContext}
+        ${exclusionContext}
         
         TAREA: ${t.movie_from_music}
         FORMATO: ${outputFormat}`;
@@ -275,6 +278,7 @@ export const generateRecommendation = async (req, res) => {
         HISTORIAL CINEMATOGRÁFICO:
         ${movieContext || "No disponible."}
         ${favoritesContext}
+        ${exclusionContext}
         
         TAREA: ${t.movie_from_movies}
         FORMATO: ${outputFormat}`;
@@ -285,6 +289,7 @@ export const generateRecommendation = async (req, res) => {
         CONTEXTO CINEMATOGRÁFICO:
         ${movieContext || "No disponible."}
         ${favoritesContext}
+        ${exclusionContext}
         
         TAREA: ${t.song_from_movies}
         FORMATO: ${outputFormat}`;
@@ -296,6 +301,7 @@ export const generateRecommendation = async (req, res) => {
         Música reciente: ${trackContext || "N/A"}
         Cine reciente: ${movieContext || "N/A"}
         ${favoritesContext}
+        ${exclusionContext}
         
         TAREA: ${t.hybrid}
         FORMATO: ${outputFormat}`;
@@ -544,9 +550,9 @@ export const generateFromList = async (req, res) => {
     if (songs.length > 0) context += `Canciones en la lista:\n- ${songs.join('\n- ')}\n\n`;
 
     const instructions = {
-      es: `Eres un experto internacional en cine y música. El usuario ha creado una lista interdisciplinaria llamada "${listName}". Analiza profundamente la VIBRA, estética y tono emocional de ESTA LISTA y recomienda UNA PELÍCULA EXACTA y UNA CANCIÓN EXACTA que encajen magistralmente. Responde en JSON estricto. TODO el contenido de 'vibra' y 'motivo' debe estar en ESPAÑOL.`,
-      en: `You are an international expert in cinema and music. The user has created an interdisciplinary list called "${listName}". Deeply analyze the VIBE, aesthetics, and emotional tone of THIS LIST and recommend ONE EXACT MOVIE and ONE EXACT SONG that fit masterfully. Respond in strict JSON. ALL content in 'vibra' and 'motivo' must be in ENGLISH.`,
-      ca: `Ets un expert internacional en cinema i música. L'usuari ha creat una llista interdisciplinària anomenada "${listName}". Analitza profundament la VIBRA, l'estètica i el to emocional d'AQUESTA LLISTA i recomana UNA PEL·LÍCULA EXACTA i UNA CANÇÓ EXACTA que hi encaixin magistralment. Respon en JSON estricte. TOT el contingut de 'vibra' i 'motivo' ha d'estar en CATALÀ.`
+      es: `Eres un experto internacional en cine y música. El usuario ha creado una lista interdisciplinaria llamada "${listName}". Analiza profundamente la VIBRA, estética y tono emocional de ESTA LISTA y recomienda UNA PELÍCULA EXACTA y UNA CANCIÓN EXACTA que encajen magistralmente. REGLA CRÍTICA: NO recomiendes nada que YA ESTÉ en la lista. Responde en JSON estricto. TODO el contenido de 'vibra' y 'motivo' debe estar en ESPAÑOL.`,
+      en: `You are an international expert in cinema and music. The user has created an interdisciplinary list called "${listName}". Deeply analyze the VIBE, aesthetics, and emotional tone of THIS LIST and recommend ONE EXACT MOVIE and ONE EXACT SONG that fit masterfully. CRITICAL RULE: DO NOT recommend anything ALREADY in the list. Respond in strict JSON. ALL content in 'vibra' and 'motivo' must be in ENGLISH.`,
+      ca: `Ets un expert internacional en cinema i música. L'usuari ha creat una llista interdisciplinària anomenada "${listName}". Analitza profundament la VIBRA, l'estètica i el to emocional d'AQUESTA LLISTA i recomana UNA PEL·LÍCULA EXACTA i UNA CANÇÓ EXACTA que hi encaixin magistralment. REGLA CRÍTICA: NO recomanis res que JA ESTIGUI a la llista. Respon en JSON estricte. TOT el contingut de 'vibra' i 'motivo' ha d'estar en CATALÀ.`
     };
 
     const systemInstruction = instructions[lang] || instructions.es;
@@ -679,9 +685,9 @@ export const completePlaylist = async (req, res) => {
     if (songs.length > 0) context += `- Canciones: ${songs.join(', ')}\n`;
 
     const instructions = {
-      es: `Eres un curador cultural experto. El usuario tiene esta lista y quiere COMPLETARLA con más contenido. Tu misión es encontrar 5 películas y 5 canciones adicionales (10 en total) que expandan este universo estético de forma coherente, diversa y sorprendente. Evita repetir títulos ya presentes en la lista. Responde en JSON estricto.`,
-      en: `You are an expert cultural curator. The user has this list and wants to COMPLETE it with more content. Your mission is to find 5 additional movies and 5 additional songs (10 total) that expand this aesthetic universe coherently, diversely, and surprisingly. Avoid repeating titles already in the list. Respond in strict JSON.`,
-      ca: `Ets un curador cultural expert. L'usuari té aquesta llista i vol COMPLETAR-LA amb més contingut. La teva missió és trobar 5 pel·lícules i 5 cançons addicionals (10 en total) que cultivin aquest univers estètic de forma coherent, diversa i sorprenent. Evita repetir títols ja presents a la llista. Respon en JSON estricte.`
+      es: `Eres un curador cultural experto. El usuario tiene esta lista y quiere COMPLETARLA con más contenido. Tu misión es encontrar 5 películas y 5 canciones adicionales (10 en total) que expandan este universo estético de forma coherente, diversa y sorprendente. REGLA DE ORO: No puedes recomendar NINGÚN título que ya esté en la lista que te proporciono. Responde en JSON estricto.`,
+      en: `You are an expert cultural curator. The user has this list and wants to COMPLETE it with more content. Your mission is to find 5 additional movies and 5 additional songs (10 total) that expand this aesthetic universe coherently, diversely, and surprisingly. GOLDEN RULE: You cannot recommend ANY title already in the list provided. Respond in strict JSON.`,
+      ca: `Ets un curador cultural expert. L'usuari té aquesta llista i vol COMPLETAR-LA amb més contingut. La teva missió és trobar 5 pel·lícules i 5 cançons addicionals (10 en total) que cultivin aquest univers estètic de forma coherent, diversa i sorprenent. REGLA D'OR: No pots recomanar CAP títol que ja estigui a la llista que et proporciono. Respon en JSON estricte.`
     };
 
     const sys = instructions[lang] || instructions.es;
