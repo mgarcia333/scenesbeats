@@ -205,6 +205,7 @@
     "music": "Música",
     "pending": "Pendent",
     "addFriend": "Afegir Amic",
+    "sendRequest": "Enviar Sol·licitud",
     "sent": "Enviat",
     "searchPlaceholderMovies": "Busca una pel·lícula que t'ofereixi...",
     "searchPlaceholderMusic": "Busca aquest ritme que tens al cap...",
@@ -278,7 +279,15 @@
     "movie": "Pel·lícula",
     "music": "Música",
     "me": "mi",
+    "activityDefault": "ha realitzat una activitat.",
+    "lists": "Llistes",
     "shareContent": "Compartir contingut"
+  },
+  "social": {
+    "pending": "Pendent",
+    "addFriend": "Afegir Amic",
+    "friends": "Amics",
+    "sent": "Enviat"
   },
   "detail": {
     "noDescription": "Sense descripció disponible.",
