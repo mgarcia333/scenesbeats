@@ -48,7 +48,8 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
         switch (type) {
           case 'movie_fav':
             res = await movieApi.search(val);
-            setResults(res.data.map(m => ({
+            const movieData = Array.isArray(res.data) ? res.data : [];
+            setResults(movieData.map(m => ({
               id: m.id,
               title: m.title,
               subtitle: m.year,
@@ -58,7 +59,8 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
           case 'actor_fav':
           case 'director_fav':
             res = await movieApi.searchPeople(val);
-            setResults(res.data.map(p => ({
+            const peopleData = Array.isArray(res.data) ? res.data : [];
+            setResults(peopleData.map(p => ({
               id: p.id,
               title: p.name,
               subtitle: p.known_for,
@@ -67,29 +69,32 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
             break;
           case 'song_fav':
             res = await spotifyApi.searchTracks(val);
-            setResults(res.data.map(t => ({
+            const trackData = res.data?.tracks?.items || [];
+            setResults(trackData.map(t => ({
               id: t.id,
               title: t.name,
-              subtitle: t.artist,
-              image: t.image
+              subtitle: t.artists?.map(a => a.name).join(', '),
+              image: t.album?.images[0]?.url
             })));
             break;
           case 'album_fav':
             res = await spotifyApi.searchAlbums(val);
-            setResults(res.data.map(a => ({
+            const albumData = res.data?.albums?.items || [];
+            setResults(albumData.map(a => ({
               id: a.id,
               title: a.name,
-              subtitle: a.artist,
-              image: a.image
+              subtitle: a.artists?.map(art => art.name).join(', '),
+              image: a.images[0]?.url
             })));
             break;
           case 'artist_fav':
             res = await spotifyApi.searchArtists(val);
-            setResults(res.data.map(a => ({
+            const artistData = res.data?.artists?.items || [];
+            setResults(artistData.map(a => ({
               id: a.id,
               title: a.name,
-              subtitle: a.genres,
-              image: a.image
+              subtitle: a.genres?.join(', '),
+              image: a.images[0]?.url
             })));
             break;
           default:
