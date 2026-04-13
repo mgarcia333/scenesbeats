@@ -231,29 +231,45 @@ export const generateRecommendation = async (req, res) => {
     }
 
     // 2. Construct Dynamic Prompt
-    const baseSystem = `${l.system}\nREGLA DE ORO: ${l.rule}`;
+    const blacklist = [
+      ...(favs.movies?.map(m => m.title) || []),
+      ...(favs.songs?.map(s => s.title) || []),
+      ...(favs.albums?.map(a => a.title) || []),
+      ...(favs.artists?.map(a => a.title) || [])
+    ].filter(Boolean);
+
+    const blacklistText = blacklist.length > 0 
+      ? `🚫 LISTA NEGRA (ESTRICTAMENTE PROHIBIDO RECOMENDAR ESTOS TÍTULOS):\n- ${blacklist.slice(0, 50).join('\n- ')}`
+      : "";
+
+    const baseSystem = `${l.system}
+    
+    REGLA DE ORO DE DESCUBRIMIENTO:
+    1. ${l.rule}
+    2. NUNCA, bajo ninguna circunstancia, recomiendes algo que ya esté en "MIS FAVORITOS" o en la "LISTA NEGRA". 
+    3. Si recomiendas algo que el usuario ya tiene marcado, habrás fallado en tu misión. Buscamos descubrimiento, no repetición.`;
     
     let prompt = "";
     let outputFormat = "";
 
     const tasks = {
       es: {
-        movie_from_music: "Analiza la 'vibra' de la música que el usuario escucha (ritmo, tempo, sentimientos). Recomienda UNA película que capture esa misma energía de forma magistral.",
-        movie_from_movies: "Analiza patrones de directores, estéticas y temas. Recomienda una PELÍCULA que profundice en sus gustos de forma sorprendente.",
-        song_from_movies: "Imagina la banda sonora ideal para las películas favoritas del usuario. Recomienda UNA canción exacta que podría sonar en los créditos de su vida.",
-        hybrid: "Crea una 'Experiencia Completa'. Recomienda una PELÍCULA y una CANCIÓN que compartan un ADN emocional idéntico. Explica su conexión espiritual."
+        movie_from_music: "Analiza la 'vibra' de la música que el usuario escucha (ritmo, tempo, sentimientos). Recomienda UNA película NUEVA que capture esa misma energía de forma magistral.",
+        movie_from_movies: "Analiza patrones de directores, estéticas y temas. Recomienda una PELÍCULA SORPRENDENTE que el usuario no conozca.",
+        song_from_movies: "Imagina la banda sonora ideal para las películas favoritas del usuario. Recomienda UNA canción exacta que sea un descubrimiento para el usuario.",
+        hybrid: "Crea una 'Experiencia Completa'. Recomienda una PELÍCULA y una CANCIÓN nuevas que compartan un ADN emocional idéntico. Explica su conexión espiritual."
       },
       en: {
-        movie_from_music: "Analyze the 'vibe' of the music the user listens to (rhythm, tempo, feelings). Recommend ONE movie that masterfully captures that same energy.",
-        movie_from_movies: "Analyze patterns of directors, aesthetics, and themes. Recommend a MOVIE that delves into their tastes in a surprising way.",
-        song_from_movies: "Imagine the ideal soundtrack for the user's favorite movies. Recommend ONE exact song that could play in the credits of their life.",
-        hybrid: "Create a 'Full Experience'. Recommend a MOVIE and a SONG that share an identical emotional DNA. Explain their spiritual connection."
+        movie_from_music: "Analyze the 'vibe' of the music the user listens to (rhythm, tempo, feelings). Recommend ONE NEW movie that masterfully captures that same energy.",
+        movie_from_movies: "Analyze patterns of directors, aesthetics, and themes. Recommend a SURPRISING MOVIE that the user doesn't know.",
+        song_from_movies: "Imagine the ideal soundtrack for the user's favorite movies. Recommend ONE exact song that is a discovery for the user.",
+        hybrid: "Create a 'Full Experience'. Recommend a NEW MOVIE and a NEW SONG that share an identical emotional DNA. Explain their spiritual connection."
       },
       ca: {
-        movie_from_music: "Analitza la 'vibra' de la música que l'usuari escolta (ritme, tempo, sentiments). Recomana UNA pel·lícula que capti aquesta mateixa energia de forma magistral.",
-        movie_from_movies: "Analitza patrons de directors, estètiques i temes. Recomana una PEL·LÍCULA que aprofundeixi en els seus gustos de forma sorprenent.",
-        song_from_movies: "Imagina la banda sonora ideal per a les pel·lícules preferides de l'usuari. Recomana UNA cançó exacta que podria sonar als crèdits de la seva vida.",
-        hybrid: "Crea una 'Experiència Completa'. Recomana una PEL·LÍCULA i una CANÇÓ que comparteixin un ADN emocional idèntic. Explica la seva connexió espiritual."
+        movie_from_music: "Analitza la 'vibra' de la música que l'usuari escolta (ritme, tempo, sentiments). Recomana UNA pel·lícula NOVA que capti aquesta mateixa energia de forma magistral.",
+        movie_from_movies: "Analitza patrons de directors, estètiques i temes. Recomana una PEL·LÍCULA SORPRENENT que l'usuari no conegui.",
+        song_from_movies: "Imagina la banda sonora ideal per a les pel·lícules preferides de l'usuari. Recomana UNA cançó exacta que sigui un descobriment per a l'usuari.",
+        hybrid: "Crea una 'Experiència Completa'. Recomana una PEL·LÍCULA NOVA i una CANÇÓ NOVA que comparteixin un ADN emocional idèntic. Explica la seva connexió espiritual."
       }
     };
 
@@ -265,6 +281,7 @@ export const generateRecommendation = async (req, res) => {
         HISTORIAL MUSICAL RECIENTE DEL USUARIO:
         ${trackContext || "Básate en la esencia de sus favoritos detallados abajo."}
         ${favoritesContext}
+        ${blacklistText}
         
         TAREA: ${t.movie_from_music}
         FORMATO: ${outputFormat}`;
@@ -275,6 +292,7 @@ export const generateRecommendation = async (req, res) => {
         HISTORIAL CINEMATOGRÁFICO:
         ${movieContext || "No disponible."}
         ${favoritesContext}
+        ${blacklistText}
         
         TAREA: ${t.movie_from_movies}
         FORMATO: ${outputFormat}`;
@@ -285,6 +303,7 @@ export const generateRecommendation = async (req, res) => {
         CONTEXTO CINEMATOGRÁFICO:
         ${movieContext || "No disponible."}
         ${favoritesContext}
+        ${blacklistText}
         
         TAREA: ${t.song_from_movies}
         FORMATO: ${outputFormat}`;
@@ -296,6 +315,7 @@ export const generateRecommendation = async (req, res) => {
         Música reciente: ${trackContext || "N/A"}
         Cine reciente: ${movieContext || "N/A"}
         ${favoritesContext}
+        ${blacklistText}
         
         TAREA: ${t.hybrid}
         FORMATO: ${outputFormat}`;
@@ -536,17 +556,28 @@ export const generateFromList = async (req, res) => {
       return res.status(400).json({ error: 'La lista no tiene elementos para analizar.' });
     }
 
-    const movies = items.filter(i => i.type === 'movie').map(m => `${m.title} ${m.subtitle ? '('+m.subtitle+')' : ''}`);
+    const movies = items.filter(i => i.type === 'movie').map(m => `${m.title}`);
     const songs = items.filter(i => i.type === 'song' || i.type === 'album').map(s => `${s.title} por ${s.subtitle}`);
 
-    let context = `LISTA: "${listName}"\n`;
-    if (movies.length > 0) context += `Películas en la lista:\n- ${movies.join('\n- ')}\n\n`;
-    if (songs.length > 0) context += `Canciones en la lista:\n- ${songs.join('\n- ')}\n\n`;
+    let context = `CONTENIDO ACTUAL DE LA LISTA: "${listName}"\n`;
+    if (movies.length > 0) context += `Películas ya presentes: ${movies.join(', ')}\n`;
+    if (songs.length > 0) context += `Canciones ya presentes: ${songs.join(', ')}\n`;
 
     const instructions = {
-      es: `Eres un experto internacional en cine y música. El usuario ha creado una lista interdisciplinaria llamada "${listName}". Analiza profundamente la VIBRA, estética y tono emocional de ESTA LISTA y recomienda UNA PELÍCULA EXACTA y UNA CANCIÓN EXACTA que encajen magistralmente. Responde en JSON estricto. TODO el contenido de 'vibra' y 'motivo' debe estar en ESPAÑOL.`,
-      en: `You are an international expert in cinema and music. The user has created an interdisciplinary list called "${listName}". Deeply analyze the VIBE, aesthetics, and emotional tone of THIS LIST and recommend ONE EXACT MOVIE and ONE EXACT SONG that fit masterfully. Respond in strict JSON. ALL content in 'vibra' and 'motivo' must be in ENGLISH.`,
-      ca: `Ets un expert internacional en cinema i música. L'usuari ha creat una llista interdisciplinària anomenada "${listName}". Analitza profundament la VIBRA, l'estètica i el to emocional d'AQUESTA LLISTA i recomana UNA PEL·LÍCULA EXACTA i UNA CANÇÓ EXACTA que hi encaixin magistralment. Respon en JSON estricte. TOT el contingut de 'vibra' i 'motivo' ha d'estar en CATALÀ.`
+      es: `Eres un experto internacional en cine y música. El usuario ha creado una lista interdisciplinaria llamada "${listName}". 
+      TAREA: Analiza profundamente la VIBRA, estética y tono emocional de ESTA LISTA y recomienda UNA PELÍCULA EXACTA y UNA CANCIÓN EXACTA que expandan este universo.
+      REGLA DE ORO: No puedes recomendar NINGÚN título que ya esté en el CONTENIDO ACTUAL DE LA LISTA. Buscamos descubrimiento.
+      Responde en JSON estricto. TODO el contenido de 'vibra' y 'motivo' debe estar en ESPAÑOL.`,
+      
+      en: `You are an international expert in cinema and music. The user has created an interdisciplinary list called "${listName}". 
+      TASK: Deeply analyze the VIBE, aesthetics, and emotional tone of THIS LIST and recommend ONE EXACT MOVIE and ONE EXACT SONG that expand this universe.
+      GOLDEN RULE: You cannot recommend ANY title already in the CURRENT CONTENT OF THE LIST. We seek discovery.
+      Respond in strict JSON. ALL content in 'vibra' and 'motivo' must be in ENGLISH.`,
+      
+      ca: `Ets un expert internacional en cinema i música. L'usuari ha creat una llista interdisciplinària anomenada "${listName}". 
+      TASCA: Analitza profundament la VIBRA, l'estètica i el to emocional d'AQUESTA LLISTA i recomana UNA PEL·LÍCULA EXACTA i UNA CANÇÓ EXACTA que ampliïn aquest univers.
+      REGLA D'OR: No pots recomanar CAP títol que ja estigui al CONTINGUT ACTUAL DE LA LLISTA. Busquem descobriment.
+      Respon en JSON estricte. TOT el contingut de 'vibra' i 'motivo' ha d'estar en CATALÀ.`
     };
 
     const systemInstruction = instructions[lang] || instructions.es;
@@ -554,8 +585,8 @@ export const generateFromList = async (req, res) => {
     const outputFormat = `
 {
   "vibra": "Análisis poético de la estética y sentimientos de esta lista.",
-  "pelicula": "Título exacto de película",
-  "cancion": "Título exacto de canción - Artista",
+  "pelicula": "Título exacto de película NUEVA",
+  "cancion": "Título exacto de canción NUEVA - Artista",
   "motivo": "Explicación de por qué son las adiciones perfectas para esta lista específica."
 }`;
 
@@ -679,9 +710,23 @@ export const completePlaylist = async (req, res) => {
     if (songs.length > 0) context += `- Canciones: ${songs.join(', ')}\n`;
 
     const instructions = {
-      es: `Eres un curador cultural experto. El usuario tiene esta lista y quiere COMPLETARLA con más contenido. Tu misión es encontrar 5 películas y 5 canciones adicionales (10 en total) que expandan este universo estético de forma coherente, diversa y sorprendente. Evita repetir títulos ya presentes en la lista. Responde en JSON estricto.`,
-      en: `You are an expert cultural curator. The user has this list and wants to COMPLETE it with more content. Your mission is to find 5 additional movies and 5 additional songs (10 total) that expand this aesthetic universe coherently, diversely, and surprisingly. Avoid repeating titles already in the list. Respond in strict JSON.`,
-      ca: `Ets un curador cultural expert. L'usuari té aquesta llista i vol COMPLETAR-LA amb més contingut. La teva missió és trobar 5 pel·lícules i 5 cançons addicionals (10 en total) que cultivin aquest univers estètic de forma coherent, diversa i sorprenent. Evita repetir títols ja presents a la llista. Respon en JSON estricte.`
+      es: `Eres un curador cultural experto. El usuario tiene esta lista y quiere COMPLETARLA con más contenido. 
+      TAREAS: 
+      1. Encuentra 5 películas y 5 canciones adicionales (10 en total) que expandan este universo estético.
+      2. REGLA DE ORO: Tienes PROHIBIDO recomendar títulos que ya aparezcan en el CONTENIDO ACTUAL DE LA LISTA. 
+      3. Asegura diversidad y sorpresa. Responde en JSON estricto.`,
+
+      en: `You are an expert cultural curator. The user has this list and wants to COMPLETE it with more content. 
+      TASKS: 
+      1. Find 5 additional movies and 5 additional songs (10 total) that expand this aesthetic universe.
+      2. GOLDEN RULE: You are FORBIDDEN from recommending titles that already appear in the CURRENT CONTENT OF THE LIST. 
+      3. Ensure diversity and surprise. Respond in strict JSON.`,
+
+      ca: `Ets un curador cultural expert. L'usuari té aquesta llista i vol COMPLETAR-LA amb més contingut. 
+      TASQUES: 
+      1. Troba 5 pel·lícules i 5 cançons addicionals (10 en total) que cultivin aquest univers estètic.
+      2. REGLA D'OR: Tens PROHIBIT recomanar títols que ja apareguin al CONTINGUT ACTUAL DE LA LLISTA. 
+      3. Assegura diversitat i sorpresa. Respon en JSON estricte.`
     };
 
     const sys = instructions[lang] || instructions.es;
