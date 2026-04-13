@@ -145,7 +145,8 @@
     "viewProfile": "View Profile",
     "today": "today",
     "month": "month",
-    "myProfile": "My Profile"
+    "myProfile": "My Profile",
+    "addedToFavorites": "added to favorites"
   },
   "settings": {
     "title": "Settings",
@@ -197,9 +198,10 @@
     "noSuggestions": "No suggestions available at the moment.",
     "listened": "listened to",
     "watched": "watched",
-    "createdList": "created the list",
-    "addedFriend": "added",
-    "genRec": "generated a recommendation for",
+    "createdList": "has started a new collection:",
+    "addedFriend": "is now connected with",
+    "genRec": "has invoked a recommendation for",
+    "addedItem": "has added a new piece:",
     "accept": "Accept",
     "reject": "Reject",
     "activities": "Recent activity",

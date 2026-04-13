@@ -106,8 +106,15 @@ const ActivityCard = ({ activity }) => {
         </div>
       </div>
       <div className="activity-body">
-        <div className="activity-icon-box"><Icon size={16} /></div>
-        <div className="activity-text">{content}</div>
+        <div className="activity-content-group">
+          <div className="activity-icon-box"><Icon size={16} /></div>
+          <div className="activity-text">{content}</div>
+        </div>
+        {data.item_image && (
+          <div className="activity-preview">
+            <img src={data.item_image} alt="" className="activity-thumb" />
+          </div>
+        )}
       </div>
     </div>
   );

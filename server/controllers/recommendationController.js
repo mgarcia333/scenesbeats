@@ -235,11 +235,13 @@ export const generateRecommendation = async (req, res) => {
       ...(favs.movies?.map(m => m.title) || []),
       ...(favs.songs?.map(s => s.title) || []),
       ...(favs.albums?.map(a => a.title) || []),
-      ...(favs.artists?.map(a => a.title) || [])
+      ...(favs.artists?.map(a => a.title) || []),
+      ...(favs.actors?.map(a => a.title) || []),
+      ...(favs.directors?.map(d => d.title) || [])
     ].filter(Boolean);
 
     const blacklistText = blacklist.length > 0 
-      ? `🚫 LISTA NEGRA (ESTRICTAMENTE PROHIBIDO RECOMENDAR ESTOS TÍTULOS):\n- ${blacklist.slice(0, 50).join('\n- ')}`
+      ? `🚫 LISTA NEGRA (ESTRICTAMENTE PROHIBIDO RECOMENDAR ESTOS TÍTULOS O NOMBRES):\n- ${blacklist.slice(0, 50).join('\n- ')}`
       : "";
 
     const baseSystem = `${l.system}
@@ -247,7 +249,8 @@ export const generateRecommendation = async (req, res) => {
     REGLA DE ORO DE DESCUBRIMIENTO:
     1. ${l.rule}
     2. NUNCA, bajo ninguna circunstancia, recomiendes algo que ya esté en "MIS FAVORITOS" o en la "LISTA NEGRA". 
-    3. Si recomiendas algo que el usuario ya tiene marcado, habrás fallado en tu misión. Buscamos descubrimiento, no repetición.`;
+    3. Si recomiendas algo que el usuario ya tiene marcado, habrás fallado en tu misión. Buscamos descubrimiento, no repetición.
+    4. ASEGÚRATE de que el título recomendado sea una obra (película o canción) y NO una persona (como un director o actor). Es un error crítico recomendar a "Stanley Kubrick" en lugar de una de sus películas.`;
     
     let prompt = "";
     let outputFormat = "";

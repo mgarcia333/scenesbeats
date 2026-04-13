@@ -4654,11 +4654,34 @@ body {
 
 .activity-body {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   background: var(--surface-alt);
   padding: 1rem;
   border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.activity-content-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.activity-preview {
+  flex-shrink: 0;
+}
+
+.activity-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .activity-icon-box {

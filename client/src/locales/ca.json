@@ -144,7 +144,8 @@
     "viewProfile": "Veure Perfil",
     "today": "avui",
     "month": "mes",
-    "myProfile": "El Meu Perfil"
+    "myProfile": "El Meu Perfil",
+    "addedToFavorites": "ha afegit a preferits"
   },
   "settings": {
     "title": "Ajustos",
@@ -196,9 +197,10 @@
     "noSuggestions": "No hi ha suggeriments disponibles en aquest moment.",
     "listened": "ha escoltat",
     "watched": "ha vist",
-    "createdList": "ha creat una nova llista:",
-    "addedFriend": "ara és amic de",
-    "genRec": "ha generat una recomanació per a la llista",
+    "createdList": "ha inaugurat una nova col·lecció:",
+    "addedFriend": "ara connecta amb",
+    "genRec": "ha invocat una recomanació per a",
+    "addedItem": "ha afegit una nova peça:",
     "accept": "Acceptar",
     "reject": "Rebutjar",
     "activities": "Activitat recent",

@@ -145,7 +145,8 @@
     "viewProfile": "Ver Perfil",
     "today": "hoy",
     "month": "mes",
-    "myProfile": "Mi Perfil"
+    "myProfile": "Mi Perfil",
+    "addedToFavorites": "ha añadido a favoritos"
   },
   "settings": {
     "title": "Ajustes",
@@ -197,9 +198,11 @@
     "noSuggestions": "No hay sugerencias disponibles en este momento.",
     "listened": "escuchó",
     "watched": "vio",
-    "createdList": "ha creado una nueva lista:",
-    "addedFriend": "ahora es amigo de",
-    "genRec": "ha generado una recomendación para la lista",
+    "watched": "vio",
+    "createdList": "ha inaugurado una nueva colección:",
+    "addedFriend": "ahora conecta con",
+    "genRec": "ha invocado una recomendación para",
+    "addedItem": "ha añadido una nueva pieza:",
     "accept": "Aceptar",
     "reject": "Rechazar",
     "activities": "Actividad reciente",
