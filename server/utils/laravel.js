@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const laravelApi = axios.create({
-    baseURL: process.env.LARAVEL_API_URL || 'http://localhost:8000/api',
+    baseURL: process.env.LARAVEL_API_URL || 'http://127.0.0.1:8000/api',
 });
 
 export const saveRecommendationHistory = async (userId, recommendations) => {

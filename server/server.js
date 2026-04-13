@@ -1,11 +1,9 @@
+import 'dotenv/config';
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { Server } from "socket.io";
-
-dotenv.config();
 
 // Global crash protection
 process.on('uncaughtException', (err) => {
@@ -129,10 +127,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_msg", async (data) => {
-    const { roomId, userId, content, type, gifUrl, itemId, itemType, itemTitle, itemImage, itemSubtitle } = data;
+    const { roomId, userId, content, type, itemId, itemType, itemTitle, itemImage, itemSubtitle } = data;
+    // Handle both snake_case and camelCase for gif_url
+    const gif_url = data.gif_url || data.gifUrl;
     
     // 1. Broadcast to the room
-    socket.to(roomId).emit("new_msg", data);
+    socket.to(roomId).emit("new_msg", { ...data, gif_url });
 
     // 2. Persist to Laravel
     try {
@@ -140,7 +140,7 @@ io.on("connection", (socket) => {
         user_id: userId,
         content,
         type: type || 'text',
-        gif_url: gifUrl,
+        gif_url: gif_url,
         item_id: itemId,
         item_type: itemType,
         item_title: itemTitle,
@@ -148,7 +148,7 @@ io.on("connection", (socket) => {
         item_subtitle: itemSubtitle
       });
     } catch (err) {
-      console.error("Failed to persist message:", err.message);
+      console.error("SERVER[ERROR]: Failed to persist message:", err.message);
     }
   });
 
