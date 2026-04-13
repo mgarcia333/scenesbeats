@@ -206,7 +206,6 @@
     "music": "Música",
     "pending": "Pendiente",
     "addFriend": "Añadir Amigo",
-    "sendRequest": "Enviar Solicitud",
     "sent": "Enviado",
     "searchPlaceholderMovies": "Busca una película que te apetezca...",
     "searchPlaceholderMusic": "Busca ese ritmo que tienes en la cabeza...",
@@ -280,15 +279,7 @@
     "movie": "Película",
     "music": "Música",
     "me": "mí",
-    "activityDefault": "ha realizado una actividad.",
-    "lists": "Listas",
     "shareContent": "Compartir contenido"
-  },
-  "social": {
-    "pending": "Pendiente",
-    "addFriend": "Añadir Amigo",
-    "friends": "Amigos",
-    "sent": "Enviado"
   },
   "detail": {
     "noDescription": "Sin descripción disponible.",

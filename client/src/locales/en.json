@@ -206,7 +206,6 @@
     "music": "Music",
     "pending": "Pending",
     "addFriend": "Add Friend",
-    "sendRequest": "Send Request",
     "sent": "Sent",
     "searchPlaceholderMovies": "Search for a movie you're in the mood for...",
     "searchPlaceholderMusic": "Search for that beat in your head...",
@@ -280,15 +279,7 @@
     "movie": "Movie",
     "music": "Music",
     "me": "me",
-    "activityDefault": "performed an activity.",
-    "lists": "Lists",
     "shareContent": "Share content"
-  },
-  "social": {
-    "pending": "Pending",
-    "addFriend": "Add Friend",
-    "friends": "Friends",
-    "sent": "Sent"
   },
   "detail": {
     "noDescription": "No description available.",
