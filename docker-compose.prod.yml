@@ -31,7 +31,6 @@ services:
       APP_URL: http://204.168.248.102/laravel-api
       APP_ENV: production
       APP_DEBUG: "false"
-      NODE_API_URL: http://api-node:5000
     depends_on:
       - db
 

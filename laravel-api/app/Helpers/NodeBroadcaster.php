@@ -14,12 +14,10 @@ class NodeBroadcaster
     {
         try {
             $nodeUrl = env('NODE_API_URL', 'http://127.0.0.1:5000');
-            Http::timeout(2)
-                ->connectTimeout(1)
-                ->post("{$nodeUrl}/api/internal/broadcast", [
-                    'event' => $event,
-                    'data' => $data
-                ]);
+            Http::post("{$nodeUrl}/api/internal/broadcast", [
+                'event' => $event,
+                'data' => $data
+            ]);
         } catch (\Exception $e) {
             Log::error("Failed to broadcast to Node.js: " . $e->getMessage());
         }
