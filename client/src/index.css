@@ -4528,13 +4528,20 @@ body {
    ══════════════════════════════════════════ */
 
 .community-layout {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .community-sidebar {
+    order: -1;
+  }
 }
 
 @media (min-width: 768px) {
   .community-layout {
+    display: grid;
     grid-template-columns: 1fr 320px;
     gap: 2rem;
   }

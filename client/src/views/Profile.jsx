@@ -672,15 +672,15 @@ const Profile = () => {
         {friends.length > 0 ? (
           <HorizontalScroll>
             {friends.map(friend => (
-              <div 
+              <Link
+                to={`/user/${friend.id}`}
                 key={friend.id} 
                 className="friend-circle-item" 
-                onClick={() => navigate(`/user/${friend.id}`)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
               >
                 <img src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} alt="" className="friend-avatar-circle" />
                 <span className="friend-name-small">{friend.name}</span>
-              </div>
+              </Link>
             ))}
           </HorizontalScroll>
         ) : (
@@ -692,27 +692,27 @@ const Profile = () => {
       <section className="feed-section" ref={listsRef}>
         <h2 className="section-title">{t('profile.myLists')}</h2>
         <HorizontalScroll>
-          <div
+          <Link
+            to="/lists"
             className="activity-card"
-            style={{ flex: '0 0 160px', height: '100px', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => navigate('/lists')}
+            style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column' }}
           >
             <PlusCircle size={24} style={{ marginBottom: '0.5rem' }} />
             <span className="stat-label" style={{ fontSize: '0.65rem' }}>{t('profile.newList')}</span>
-          </div>
+          </Link>
           {myLists.map(list => (
-            <div
+            <Link
+              to={`/list/${list.id}`}
               key={list.id}
               className="activity-card"
-              style={{ flex: '0 0 160px', height: '100px', cursor: 'pointer' }}
-              onClick={() => navigate(`/list/${list.id}`)}
+              style={{ flex: '0 0 160px', height: '100px', cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', padding: '12px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <ListIcon size={16} color="var(--primary-color)" />
                 <span className="small font-bold" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
               </div>
-              <div className="text-muted small">{list.items?.length || 0} elementos</div>
-            </div>
+              <div className="text-muted small">{list.items?.length || 0} {(list.items?.length === 1 ? t('common.item') : t('common.items')) || 'elementos'}</div>
+            </Link>
           ))}
         </HorizontalScroll>
       </section>

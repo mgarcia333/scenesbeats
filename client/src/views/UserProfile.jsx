@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { socialApi, favoritesApi, movieApi, spotifyApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -335,15 +335,15 @@ const UserProfile = () => {
         {friendsList.length > 0 ? (
           <HorizontalScroll>
             {friendsList.map(friend => (
-              <div 
+              <Link
+                to={`/user/${friend.id}`}
                 key={friend.id} 
                 className="friend-circle-item" 
-                onClick={() => navigate(`/user/${friend.id}`)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
               >
                 <img src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} alt="" className="friend-avatar-circle" />
                 <span className="friend-name-small">{friend.name}</span>
-              </div>
+              </Link>
             ))}
           </HorizontalScroll>
         ) : (
@@ -356,18 +356,18 @@ const UserProfile = () => {
         <h2 className="section-title">{t('profile.publicLists')} ({(profileUser.lists || []).length})</h2>
         <HorizontalScroll>
           {(profileUser.lists || []).map(list => (
-            <div
+            <Link
+              to={`/list/${list.id}`}
               key={list.id}
               className="activity-card"
-              style={{ flex: '0 0 160px', height: '100px', cursor: 'pointer' }}
-              onClick={() => navigate(`/list/${list.id}`)}
+              style={{ flex: '0 0 160px', height: '100px', cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', padding: '12px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <ListIcon size={16} color="var(--primary-color)" />
                 <span className="small font-bold" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
               </div>
-              <div className="text-muted small">{list.items_count || 0} elementos</div>
-            </div>
+              <div className="text-muted small">{list.items_count || 0} {(list.items_count === 1 ? t('common.item') : t('common.items')) || 'elementos'}</div>
+            </Link>
           ))}
           {(profileUser.lists || []).length === 0 && (
              <p className="text-muted small">{t('profile.noPublicLists')}</p>
