@@ -1113,6 +1113,15 @@ body {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+}
+
+.stat-item:hover {
+  background: var(--surface-alt);
+  transform: translateY(-1px);
 }
 
 .stat-item.highlight {

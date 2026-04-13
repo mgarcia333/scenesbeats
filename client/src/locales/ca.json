@@ -141,7 +141,10 @@
     "publicLists": "Llistes Públiques",
     "noPublicLists": "Aquest usuari encara no té llistes públiques.",
     "connections": "Connexions",
-    "viewProfile": "Veure Perfil"
+    "viewProfile": "Veure Perfil",
+    "today": "avui",
+    "month": "mes",
+    "myProfile": "El Meu Perfil"
   },
   "settings": {
     "title": "Ajustos",
@@ -209,6 +212,7 @@
     "searchPlaceholderMovies": "Busca una pel·lícula que t'ofereixi...",
     "searchPlaceholderMusic": "Busca aquest ritme que tens al cap...",
     "recommendedSongs": "Cançons Recomanades",
+    "misChats": "Els Meus Xats",
     "noResultsFound": "No hem trobat res per a \"{{query}}\".",
     "tryAnotherVibe": "Prova una altra vibra.",
     "preparingStage": "Preparant l'escenari...",
@@ -278,7 +282,15 @@
     "movie": "Pel·lícula",
     "music": "Música",
     "me": "mi",
-    "shareContent": "Compartir contingut"
+    "shareContent": "Compartir contingut",
+    "activityDefault": "ha realitzat una activitat.",
+    "live": "EN DIRECTE"
+  },
+  "social": {
+    "pending": "Pendent",
+    "addFriend": "Afegir Amic",
+    "sent": "Enviat",
+    "friendsCircle": "Cercle d'Amics"
   },
   "detail": {
     "noDescription": "Sense descripció disponible.",

@@ -142,7 +142,10 @@
     "publicLists": "Listas Públicas",
     "noPublicLists": "Este usuario aún no tiene listas públicas.",
     "connections": "Conexiones",
-    "viewProfile": "Ver Perfil"
+    "viewProfile": "Ver Perfil",
+    "today": "hoy",
+    "month": "mes",
+    "myProfile": "Mi Perfil"
   },
   "settings": {
     "title": "Ajustes",
@@ -210,6 +213,7 @@
     "searchPlaceholderMovies": "Busca una película que te apetezca...",
     "searchPlaceholderMusic": "Busca ese ritmo que tienes en la cabeza...",
     "recommendedSongs": "Canciones Recomendadas",
+    "misChats": "Mis Chats",
     "noResultsFound": "No hemos encontrado nada para \"{{query}}\".",
     "tryAnotherVibe": "Prueba otra vibra.",
     "preparingStage": "Preparando el escenario...",
@@ -279,7 +283,15 @@
     "movie": "Película",
     "music": "Música",
     "me": "mí",
-    "shareContent": "Compartir contenido"
+    "shareContent": "Compartir contenido",
+    "activityDefault": "ha realizado una actividad.",
+    "live": "EN DIRECTO"
+  },
+  "social": {
+    "pending": "Pendiente",
+    "addFriend": "Añadir Amigo",
+    "sent": "Enviado",
+    "friendsCircle": "Círculo de Amigos"
   },
   "detail": {
     "noDescription": "Sin descripción disponible.",

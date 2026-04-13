@@ -31,6 +31,16 @@ const UserProfile = () => {
   const [loadingLB, setLoadingLB] = useState(false);
   const [recentSongs, setRecentSongs] = useState([]); // We'll try to show these if available
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const friendsRef = useRef(null);
+  const listsRef = useRef(null);
+  const tastesRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   
   // Real-time activity
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
@@ -163,7 +173,7 @@ const UserProfile = () => {
 
   const ReadOnlyFavoriteSlot = ({ type, position }) => {
     const fav = (profileUser.favorites || []).find(f => f.type === type && f.position === position);
-    const isPerson = type === 'actor_fav' || type === 'director_fav';
+    const isPerson = type === 'actor_fav' || type === 'director_fav' || type === 'artist_fav';
     const isMedia = type === 'movie_fav' || type === 'song_fav' || type === 'album_fav';
     
     if (fav) {
@@ -239,13 +249,17 @@ const UserProfile = () => {
           <h2 className="profile-name-large">{profileUser.name}</h2>
           
           <div className="profile-stats">
-            <div className="stat-item">
+            <div className="stat-item" onClick={() => scrollToSection(tastesRef)} style={{ cursor: 'pointer' }}>
+              <span className="stat-value">{(profileUser.favorites || []).length}</span>
+              <span className="stat-label">{t('profile.myTastes')}</span>
+            </div>
+            <div className="stat-item" onClick={() => scrollToSection(listsRef)} style={{ cursor: 'pointer' }}>
               <span className="stat-value">{(profileUser.lists || []).length}</span>
               <span className="stat-label">{t('common.lists')}</span>
             </div>
-            <div className="stat-item">
+            <div className="stat-item" onClick={() => scrollToSection(friendsRef)} style={{ cursor: 'pointer' }}>
               <span className="stat-value">{friendsList.length}</span>
-              <span className="stat-label">Amigos</span>
+              <span className="stat-label">{t('profile.friends')}</span>
             </div>
           </div>
 
@@ -282,19 +296,21 @@ const UserProfile = () => {
           </div>
           <div className="live-indicator">
              <div className="live-dot" />
-             <span>EN DIRECTO</span>
+             <span>{t('common.live')}</span>
           </div>
         </div>
       )}
 
       {/* ── My Tastes (Favorites) ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={tastesRef}>
         <h2 className="section-title">{t('profile.myTastes')}</h2>
         <div className="gustos-container">
           <ReadOnlyGustoSection title={t('profile.movies')} type="movie_fav" icon={Film} />
           <ReadOnlyGustoSection title={t('profile.songs')} type="song_fav" icon={Music} />
           <ReadOnlyGustoSection title={t('profile.albums')} type="album_fav" icon={Radio} />
           <ReadOnlyGustoSection title={t('profile.artists')} type="artist_fav" icon={Music} />
+          <ReadOnlyGustoSection title={t('profile.actors')} type="actor_fav" icon={Star} />
+          <ReadOnlyGustoSection title={t('profile.directors')} type="director_fav" icon={Circle} />
         </div>
       </section>
 
@@ -314,8 +330,8 @@ const UserProfile = () => {
       </section>
 
       {/* ── Friends Circle (Social Network) ── */}
-      <section className="feed-section">
-        <h2 className="section-title">Círculo de Amigos ({friendsList.length})</h2>
+      <section className="feed-section" ref={friendsRef}>
+        <h2 className="section-title">{t('social.friendsCircle')} ({friendsList.length})</h2>
         {friendsList.length > 0 ? (
           <HorizontalScroll>
             {friendsList.map(friend => (
@@ -336,7 +352,7 @@ const UserProfile = () => {
       </section>
 
       {/* ── Public Lists ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={listsRef}>
         <h2 className="section-title">{t('profile.publicLists')} ({(profileUser.lists || []).length})</h2>
         <HorizontalScroll>
           {(profileUser.lists || []).map(list => (

@@ -142,7 +142,10 @@
     "publicLists": "Public Lists",
     "noPublicLists": "This user has no public lists yet.",
     "connections": "Connections",
-    "viewProfile": "View Profile"
+    "viewProfile": "View Profile",
+    "today": "today",
+    "month": "month",
+    "myProfile": "My Profile"
   },
   "settings": {
     "title": "Settings",
@@ -210,6 +213,7 @@
     "searchPlaceholderMovies": "Search for a movie you're in the mood for...",
     "searchPlaceholderMusic": "Search for that beat in your head...",
     "recommendedSongs": "Recommended Songs",
+    "misChats": "My Chats",
     "noResultsFound": "We couldn't find anything for \"{{query}}\".",
     "tryAnotherVibe": "Try another vibe.",
     "preparingStage": "Preparing the stage...",
@@ -279,7 +283,15 @@
     "movie": "Movie",
     "music": "Music",
     "me": "me",
-    "shareContent": "Share content"
+    "shareContent": "Share content",
+    "activityDefault": "performed an activity.",
+    "live": "LIVE"
+  },
+  "social": {
+    "pending": "Pending",
+    "addFriend": "Add Friend",
+    "sent": "Sent",
+    "friendsCircle": "Friends Circle"
   },
   "detail": {
     "noDescription": "No description available.",

@@ -43,7 +43,7 @@ const ActivityCard = ({ activity }) => {
       );
       break;
     default:
-      content = <span>{t('common.activityDefault') || 'ha realizado una actividad.'}</span>;
+      content = <span>{t('common.activityDefault')}</span>;
   }
 
   const Icon = type === 'list_created' ? ListIcon : (type === 'friend_added' ? Users : Sparkles);
@@ -192,9 +192,9 @@ const Community = () => {
         </div>
 
         <div className="community-sidebar">
-          {/* Friends First - at top of sidebar */}
+          {/* Mis Chats (Friends) - Always at the top */}
           <div className="sidebar-section">
-            <h2 className="section-title">{t('common.friends')}</h2>
+            <h2 className="section-title">{t('community.misChats')}</h2>
             <div className="sidebar-friends-list">
               {friends.length > 0 ? (
                 friends.map(friend => (

@@ -290,6 +290,16 @@ const Profile = () => {
   const { user, logout, spotifyConnected, setSpotifyConnected, connectLetterboxd, connectSpotify, refreshAuth } = useAuth();
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
+  
+  const friendsRef = useRef(null);
+  const listsRef = useRef(null);
+  const tastesRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const [lbMovies, setLbMovies] = useState([]);
   const [loadingLB, setLoadingLB] = useState(false);
@@ -480,7 +490,7 @@ const Profile = () => {
 
   const FavoriteSlot = ({ type, position }) => {
     const fav = getFavoriteAt(type, position);
-    const isPerson = type === 'actor_fav' || type === 'director_fav';
+    const isPerson = type === 'actor_fav' || type === 'director_fav' || type === 'artist_fav';
     const isMedia = type === 'movie_fav' || type === 'song_fav' || type === 'album_fav';
     
     if (fav) {
@@ -548,8 +558,8 @@ const Profile = () => {
     <div className="view-container profile-view">
       {/* Header with logout button */}
       <div className="profile-top-bar">
-        <h2 className="profile-title-mobile">Mi Perfil</h2>
-        <button className="profile-logout-btn" onClick={handleLogout} title={t('auth.logout') || 'Cerrar Sesión'}>
+        <h2 className="profile-title-mobile">{t('profile.myProfile')}</h2>
+        <button className="profile-logout-btn" onClick={handleLogout} title={t('profile.logout') || 'Cerrar Sesión'}>
           <LogOut size={18} />
         </button>
       </div>
@@ -573,23 +583,31 @@ const Profile = () => {
 
           {/* Stats con counts dinámicos */}
           <div className="profile-stats">
+            <div className="stat-item" onClick={() => scrollToSection(tastesRef)} style={{ cursor: 'pointer' }}>
+              <span className="stat-value">{myFavorites.length || 0}</span>
+              <span className="stat-label">{t('profile.myTastes')}</span>
+            </div>
             <div className="stat-item highlight">
               <Flame size={14} className="stat-icon" />
               <div className="stat-content">
                 <span className="stat-value">{spotifyTodayCount}</span>
-                <span className="stat-label">hoy</span>
+                <span className="stat-label">{t('profile.today')}</span>
               </div>
             </div>
             <div className="stat-item highlight">
               <Film size={14} className="stat-icon" />
               <div className="stat-content">
                 <span className="stat-value">{letterboxdThisMonth}</span>
-                <span className="stat-label">mes</span>
+                <span className="stat-label">{t('profile.month')}</span>
               </div>
             </div>
-            <div className="stat-item">
+            <div className="stat-item" onClick={() => scrollToSection(listsRef)} style={{ cursor: 'pointer' }}>
+              <span className="stat-value">{myLists.length || 0}</span>
+              <span className="stat-label">{t('common.lists')}</span>
+            </div>
+            <div className="stat-item" onClick={() => scrollToSection(friendsRef)} style={{ cursor: 'pointer' }}>
               <span className="stat-value">{friends.length || 0}</span>
-              <span className="stat-label">Amigos</span>
+              <span className="stat-label">{t('profile.friends')}</span>
             </div>
           </div>
 
@@ -632,7 +650,7 @@ const Profile = () => {
       )}
 
       {/* ── Gustos (Favorites) ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={tastesRef}>
         <h2 className="section-title">{t('profile.myTastes')}</h2>
         <div className="gustos-container">
           <GustoSection title={t('profile.movies')} type="movie_fav" icon={Film} />
@@ -649,7 +667,7 @@ const Profile = () => {
       </section>
 
       {/* ── Friends Section ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={friendsRef}>
         <h2 className="section-title">{t('profile.friends')} ({friends.length})</h2>
         {friends.length > 0 ? (
           <HorizontalScroll>
@@ -671,7 +689,7 @@ const Profile = () => {
       </section>
 
       {/* ── My Lists ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={listsRef}>
         <h2 className="section-title">{t('profile.myLists')}</h2>
         <HorizontalScroll>
           <div
