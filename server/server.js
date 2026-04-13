@@ -71,6 +71,10 @@ app.post("/api/internal/broadcast", (req, res) => {
       socketIds.forEach(sid => io.to(sid).emit(event, data));
       console.log(`   Directed to user: ${data.recipient_id} (${socketIds.size} sockets)`);
     }
+  } else if (data.list_id) {
+    // Broadcast list updates to users in that list's room
+    io.to(`list_${data.list_id}`).emit(event, data);
+    console.log(`   Broadcast to list room: list_${data.list_id}`);
   } else {
     // Otherwise broadcast to all
     io.emit(event, data);
@@ -96,6 +100,9 @@ io.on("connection", (socket) => {
     userSockets.get(uid).add(socket.id);
     socket.userId = uid;
     console.log(`User ${uid} registered with socket ${socket.id}`);
+    
+    // Notify others that this user is online
+    io.emit('user_status', { userId: uid, status: 'online' });
   });
 
   // Extract Spotify token from cookies
@@ -155,7 +162,10 @@ io.on("connection", (socket) => {
     if (socket.userId && userSockets.has(socket.userId)) {
       userSockets.get(socket.userId).delete(socket.id);
       if (userSockets.get(socket.userId).size === 0) {
-        userSockets.delete(socket.userId);
+        const uid = socket.userId;
+        userSockets.delete(uid);
+        // Notify others that this user is offline
+        io.emit('user_status', { userId: uid, status: 'offline' });
       }
     }
     if (monitor) monitor.stop();

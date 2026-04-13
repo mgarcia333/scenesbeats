@@ -5,7 +5,7 @@ import { socialApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, UserPlus, Check, X, Clock, MessageSquare, 
-  Heart, Sparkles, Film, Music, List as ListIcon 
+  Heart, Sparkles, Film, Music, List as ListIcon, Plus
 } from 'lucide-react';
 
 import LoadingDots from '../components/LoadingDots';
@@ -42,11 +42,44 @@ const ActivityCard = ({ activity }) => {
         </>
       );
       break;
+    case 'favorite_added':
+      content = (
+        <>
+          <span>{t('profile.addedToFavorites')} </span>
+          <strong className="activity-subject">{data.item_title}</strong>
+        </>
+      );
+      break;
+    case 'item_added_to_list':
+      content = (
+        <>
+          <span>{t('community.addedItem')} </span>
+          <strong className="activity-subject">{data.item_title}</strong>
+          <span> {t('common.to')} </span>
+          <strong className="activity-subject">{data.list_name}</strong>
+        </>
+      );
+      break;
+    case 'item_added': // Fallback
+      content = (
+        <>
+          <span>{t('community.addedItem')} </span>
+          <strong className="activity-subject">{data.item_title}</strong>
+        </>
+      );
+      break;
     default:
       content = <span>{t('common.activityDefault')}</span>;
   }
 
-  const Icon = type === 'list_created' ? ListIcon : (type === 'friend_added' ? Users : Sparkles);
+  const Icon = {
+    'list_created': ListIcon,
+    'friend_added': Users,
+    'favorite_added': Heart,
+    'item_added_to_list': Plus,
+    'item_added': Plus,
+    'rec_generated': Sparkles
+  }[type] || Sparkles;
 
   return (
     <div className="activity-card animate-fadeIn">
@@ -57,14 +90,14 @@ const ActivityCard = ({ activity }) => {
           className="user-avatar-sm"
           onClick={(e) => {
             e.stopPropagation();
-            window.location.href = `/user/${user.id}`;
+            navigate(`/user/${user.id}`);
           }}
           style={{ cursor: 'pointer' }}
         />
         <div className="activity-info">
           <div 
             className="activity-user"
-            onClick={() => window.location.href = `/user/${user.id}`}
+            onClick={() => navigate(`/user/${user.id}`)}
             style={{ cursor: 'pointer' }}
           >
             {user.name}
@@ -87,6 +120,7 @@ const Community = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [friends, setFriends] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [sendingRequest, setSendingRequest] = useState(null); // ID of user being followed
   const navigate = useNavigate();
@@ -111,10 +145,21 @@ const Community = () => {
       fetchData();
     });
 
+    socket.on('user_status', (data) => {
+      console.log("📍 User status update:", data);
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        if (data.status === 'online') newSet.add(data.userId.toString());
+        else newSet.delete(data.userId.toString());
+        return newSet;
+      });
+    });
+
     return () => {
       socket.off('new_activity');
       socket.off('friend_request');
       socket.off('friend_accepted');
+      socket.off('user_status');
     };
   }, [user]);
 
@@ -200,13 +245,16 @@ const Community = () => {
                 friends.map(friend => (
                   <div key={friend.id} className="sidebar-friend-card">
                     <div className="friend-info-group">
-                      <img 
-                        src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} 
-                        className="user-avatar-sm" 
-                        alt=""
-                        onClick={() => navigate(`/user/${friend.id}`)}
-                        style={{ cursor: 'pointer' }}
-                      />
+                      <div className="friend-avatar-wrapper-sidebar">
+                        <img 
+                          src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} 
+                          className="user-avatar-sm" 
+                          alt=""
+                          onClick={() => navigate(`/user/${friend.id}`)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <span className={onlineUsers.has(friend.id.toString()) ? 'online-indicator' : 'offline-indicator'}></span>
+                      </div>
                       <span className="friend-name" onClick={() => navigate(`/user/${friend.id}`)} style={{ cursor: 'pointer' }}>{friend.name}</span>
                     </div>
                     <button 

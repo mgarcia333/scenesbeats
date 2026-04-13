@@ -23,10 +23,11 @@ export const getTopItems = async (req, res) => {
  * Controller to fetch user's recently played tracks.
  */
 export const getRecentlyPlayed = async (req, res) => {
-  const limit = req.query.limit || 20;
+  const { limit = 20, before } = req.query;
+  const url = `https://api.spotify.com/v1/me/player/recently-played?limit=${limit}${before ? `&before=${before}` : ''}`;
 
   try {
-    const response = await axios.get(`https://api.spotify.com/v1/me/player/recently-played?limit=${limit}`, {
+    const response = await axios.get(url, {
       headers: { 'Authorization': `Bearer ${req.spotifyToken}` }
     });
     res.json(response.data);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { socialApi, spotifyApi, movieApi, favoritesApi, listsApi, authApi } from '../api';
 import {
@@ -359,7 +359,7 @@ const Profile = () => {
         const thisMonth = now.toISOString().slice(0, 7);
         
         const moviesThisMonth = movies.filter(movie => {
-          const watchedDate = movie.watched_date || movie.date_watched || movie.watchDate;
+          const watchedDate = movie.watchedDate || movie.watched_date || movie.date_watched || movie.watchDate;
           if (!watchedDate) return false;
           return watchedDate.startsWith(thisMonth);
         });
@@ -370,35 +370,59 @@ const Profile = () => {
       .finally(() => setLoadingLB(false));
   }, [user?.letterboxd_username]);
 
-  // Load Spotify recently played
+  // Load Spotify recently played with multi-page support for today's count
   useEffect(() => {
     if (!spotifyConnected) return;
-    setLoadingSpotify(true);
-    spotifyApi.getRecentlyPlayed(50)
-      .then(res => {
-        if (res.data?.items) {
-          const now = new Date();
-          const todayStr = now.toISOString().split('T')[0];
-          
-          const songsToday = res.data.items.filter(item => {
-            const playedAt = item.played_at?.split('T')[0];
-            return playedAt === todayStr;
-          });
-          
-          setSpotifyTodayCount(songsToday.length);
-          
-          setRecentSongs(res.data.items.slice(0, 20).map(item => ({
-            id: item.track.id,
-            name: item.track.name,
-            artist: item.track.artists[0].name,
-            artwork: item.track.album.images[0]?.url,
-            previewUrl: item.track.preview_url,
-            spotifyUrl: item.track.external_urls.spotify,
-          })));
+
+    const fetchRecentlyPlayed = async () => {
+      setLoadingSpotify(true);
+      try {
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        
+        // Fetch first page (max 50)
+        const res1 = await spotifyApi.getRecentlyPlayed(50);
+        let items = res1.data?.items || [];
+        
+        // If the 50th item is still from today, we might have more today
+        const lastItemDate = items[items.length - 1]?.played_at?.split('T')[0];
+        
+        if (items.length === 50 && lastItemDate === todayStr) {
+          try {
+            // Get timestamp of oldest track to use as 'before' cursor
+            const oldestTimestamp = new Date(items[items.length - 1].played_at).getTime();
+            const res2 = await spotifyApi.getRecentlyPlayed(50, oldestTimestamp);
+            if (res2.data?.items) {
+              items = [...items, ...res2.data.items];
+            }
+          } catch (e) {
+            console.warn("Could not fetch second page of Spotify history");
+          }
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingSpotify(false));
+
+        const songsToday = items.filter(item => {
+          const playedAt = item.played_at?.split('T')[0];
+          return playedAt === todayStr;
+        });
+        
+        setSpotifyTodayCount(songsToday.length);
+        
+        setRecentSongs(items.slice(0, 20).map(item => ({
+          id: item.track.id,
+          name: item.track.name,
+          artist: item.track.artists[0].name,
+          artwork: item.track.album.images[0]?.url,
+          previewUrl: item.track.preview_url,
+          spotifyUrl: item.track.external_urls.spotify,
+        })));
+      } catch (err) {
+        console.error("Error loading Spotify stats:", err);
+      } finally {
+        setLoadingSpotify(false);
+      }
+    };
+
+    fetchRecentlyPlayed();
   }, [spotifyConnected]);
 
   // Real-time polling for Currently Playing - only on first load
