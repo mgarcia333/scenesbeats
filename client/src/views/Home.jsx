@@ -203,7 +203,7 @@ const Home = () => {
           <h2 className="section-title">{t('home.myRecentMovies')}</h2>
           <HorizontalScroll>
             {myRecentMovies.map(movie => (
-              <MovieCard key={movie.id} movie={movie} />
+              <MovieCard key={movie.id} movie={movie} clickable={false} />
             ))}
           </HorizontalScroll>
         </section>

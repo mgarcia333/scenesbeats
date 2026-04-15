@@ -171,6 +171,7 @@ const ListView = () => {
   const [magicResults, setMagicResults] = useState(null);    // full API response
   const [visibleRecs, setVisibleRecs] = useState([]);         // what's shown (up to 6)
   const [recPool, setRecPool] = useState([]);                 // reserve pool for replacements
+  const [alreadyShownRecs, setAlreadyShownRecs] = useState([]); // Track shown recommendations to avoid repeats
   const [completing, setCompleting] = useState(false);
   const [showMagic, setShowMagic] = useState(false);
 
@@ -212,6 +213,11 @@ const ListView = () => {
         socket.off('list_updated');
       };
     }
+  }, [id]);
+
+  // Reset recommendations when changing to a different list
+  useEffect(() => {
+    setAlreadyShownRecs([]);
   }, [id]);
 
   useEffect(() => { if (user) fetchFriends(); }, [user]);
@@ -258,18 +264,36 @@ const ListView = () => {
     setVisibleRecs([]);
     setRecPool([]);
     try {
+      // Get existing titles from the list to pass to the API
+      const existingTitles = list.items.map(i => i.title.toLowerCase());
+      
       const res = await recommendationApi.completeList({ 
         items: list.items, 
         listName: list.name,
         lang: i18n.language,
-        userId: user?.id
+        userId: user?.id,
+        excludeTitles: [...existingTitles, ...alreadyShownRecs] // Pass excluded titles
       });
       const data = res.data;
       setMagicResults(data);
+      
       // Tag each rec with a stable pool index and assign first 6 as visible
-      const tagged = (data.recomendaciones || []).map((r, i) => ({ ...r, _poolIdx: i, _added: false }));
-      setVisibleRecs(tagged.slice(0, 6));
-      setRecPool(tagged.slice(6));
+      const allRecs = (data.recomendaciones || []).map((r, i) => ({ ...r, _poolIdx: i, _added: false }));
+      
+      // Filter out items already shown before
+      const filteredRecs = allRecs.filter(r => 
+        !alreadyShownRecs.some(shown => 
+          r.titulo.toLowerCase().includes(shown.toLowerCase()) || 
+          shown.toLowerCase().includes(r.titulo.toLowerCase())
+        )
+      );
+      
+      // Add newly shown recs to the tracking list
+      const newRecTitles = filteredRecs.slice(0, 10).map(r => r.titulo);
+      setAlreadyShownRecs(prev => [...prev, ...newRecTitles]);
+      
+      setVisibleRecs(filteredRecs.slice(0, 6));
+      setRecPool(filteredRecs.slice(6));
     } catch (err) { console.error(err); }
     finally { setCompleting(false); }
   };

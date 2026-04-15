@@ -699,7 +699,7 @@ export const generateFromList = async (req, res) => {
  */
 export const completePlaylist = async (req, res) => {
   try {
-    const { items = [], listName = "Mi Lista", lang = 'es' } = req.body;
+    const { items = [], listName = "Mi Lista", lang = 'es', excludeTitles = [] } = req.body;
 
     if (items.length === 0) {
       return res.status(400).json({ error: 'La lista está vacía.' });
@@ -711,24 +711,29 @@ export const completePlaylist = async (req, res) => {
     let context = `CONTENIDO ACTUAL DE LA LISTA "${listName}":\n`;
     if (movies.length > 0) context += `- Películas: ${movies.join(', ')}\n`;
     if (songs.length > 0) context += `- Canciones: ${songs.join(', ')}\n`;
+    
+    // Add previously shown recommendations to exclude
+    if (excludeTitles.length > 0) {
+      context += `\nTÍTULOS YA RECOMENDADOS ANTERIORMENTE (NO recomendar de nuevo): ${excludeTitles.join(', ')}\n`;
+    }
 
-    const instructions = {
+const instructions = {
       es: `Eres un curador cultural experto. El usuario tiene esta lista y quiere COMPLETARLA con más contenido. 
       TAREAS: 
       1. Encuentra 5 películas y 5 canciones adicionales (10 en total) que expandan este universo estético.
-      2. REGLA DE ORO: Tienes PROHIBIDO recomendar títulos que ya aparezcan en el CONTENIDO ACTUAL DE LA LISTA. 
+      2. REGLA DE ORO: Tienes PROHIBIDO recomendar títulos que ya aparezcan en el CONTENIDO ACTUAL DE LA LISTA O EN LOS YA RECOMENDADOS ANTERIORMENTE. 
       3. Asegura diversidad y sorpresa. Responde en JSON estricto.`,
 
       en: `You are an expert cultural curator. The user has this list and wants to COMPLETE it with more content. 
       TASKS: 
       1. Find 5 additional movies and 5 additional songs (10 total) that expand this aesthetic universe.
-      2. GOLDEN RULE: You are FORBIDDEN from recommending titles that already appear in the CURRENT CONTENT OF THE LIST. 
+      2. GOLDEN RULE: You are FORBIDDEN from recommending titles that already appear in the CURRENT CONTENT OF THE LIST OR IN PREVIOUSLY SHOWN RECOMMENDATIONS. 
       3. Ensure diversity and surprise. Respond in strict JSON.`,
 
       ca: `Ets un curador cultural expert. L'usuari té aquesta llista i vol COMPLETAR-LA amb més contingut. 
       TASQUES: 
       1. Troba 5 pel·lícules i 5 cançons addicionals (10 en total) que cultivin aquest univers estètic.
-      2. REGLA D'OR: Tens PROHIBIT recomanar títols que ja apareguin al CONTINGUT ACTUAL DE LA LLISTA. 
+      2. REGLA D'OR: Tens PROHIBIT recomanar títols que ja apareguin al CONTINGUT ACTUAL DE LA LLISTA O EN RECOMANACIONS MOSTRADES ANTERIORMENT. 
       3. Assegura diversitat i sorpresa. Respon en JSON estricte.`
     };
 

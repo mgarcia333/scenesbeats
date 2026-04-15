@@ -22,6 +22,14 @@ const ItemDetail = ({ type }) => {
       try {
         let res;
         if (type === 'movie') {
+          // Check if it's a Letterboxd ID
+          if (id.startsWith('letterboxd-')) {
+            // Extract username from Letterboxd ID format: letterboxd-watch-{id} or letterboxd-{username}
+            // For now, show error that this feature needs TMDB ID
+            setError(t('search.itemNotFound') + ' (ID de Letterboxd no compatible)');
+            setLoading(false);
+            return;
+          }
           res = await movieApi.getOne(id);
         } else {
           res = await spotifyApi.getTrack(id);
