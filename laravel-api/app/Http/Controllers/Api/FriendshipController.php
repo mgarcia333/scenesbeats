@@ -123,6 +123,16 @@ class FriendshipController extends Controller
         $friendship = Friendship::find($id);
         if (!$friendship) return response()->json(['error' => 'Not found'], 404);
 
+        // Notify both users
+        \App\Helpers\NodeBroadcaster::broadcast('friend_removed', [
+            'user_id' => $friendship->sender_id,
+            'friend_id' => $friendship->recipient_id
+        ]);
+        \App\Helpers\NodeBroadcaster::broadcast('friend_removed', [
+            'user_id' => $friendship->recipient_id,
+            'friend_id' => $friendship->sender_id
+        ]);
+
         $friendship->delete();
         return response()->json(['message' => 'Eliminado con éxito']);
     }

@@ -53,7 +53,7 @@ const CollabModal = ({ isOpen, onClose, friends, collaborators, onAdd, onRemove,
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content collab-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-group">
             <Users size={20} className="icon-spotify" />
@@ -62,38 +62,39 @@ const CollabModal = ({ isOpen, onClose, friends, collaborators, onAdd, onRemove,
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="modal-body">
-          <p className="lv-ai-sub" style={{ marginBottom: '1.5rem' }}>
+          <p className="lv-ai-sub collab-desc">
             {t('lists.collabInvite') || 'Invita a tus amigos para que puedan editar esta lista contigo.'}
           </p>
           
-          <div className="modal-lists-container">
-            {friends.length === 0 && <p className="text-center py-4 opacity-50">{t('social.noFriends')}</p>}
-            {friends.map(friend => {
-              const isCollab = collaborators.some(c => c.id === friend.id);
-              return (
-                <div key={friend.id} className={`modal-list-item ${isCollab ? 'success' : ''}`}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img 
-                      src={friend.avatar || '/placeholder-u.png'} 
-                      className="lv-author-avatar" 
-                      alt="" 
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-u.png'; }}
-                    />
-                    <span className="list-name">{friend.name}</span>
+          {friends.length === 0 ? (
+            <p className="text-center py-4 opacity-50">{t('social.noFriends')}</p>
+          ) : (
+            <div className="collab-list">
+              {friends.map(friend => {
+                const isCollab = collaborators.some(c => c.id === friend.id);
+                return (
+                  <div key={friend.id} className={`collab-item ${isCollab ? 'active' : ''}`}>
+                    <div className="collab-user">
+                      <img 
+                        src={friend.avatar || '/placeholder-u.png'} 
+                        className="collab-avatar" 
+                        alt="" 
+                        onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-u.png'; }}
+                      />
+                      <span className="collab-name">{friend.name}</span>
+                    </div>
+                    <button 
+                      className={`collab-btn ${isCollab ? 'remove' : 'add'}`}
+                      onClick={() => isCollab ? onRemove(friend.id) : onAdd(friend.id)}
+                      title={isCollab ? 'Quitar' : 'Añadir'}
+                    >
+                      {isCollab ? <Trash2 size={14} /> : <Plus size={14} />}
+                    </button>
                   </div>
-                  {isCollab ? (
-                    <button className="lv-item-remove" onClick={() => onRemove(friend.id)} style={{ position: 'static' }}>
-                      <Trash2 size={14} />
-                    </button>
-                  ) : (
-                    <button className="lv-ai-add-btn" onClick={() => onAdd(friend.id)}>
-                      <Plus size={16} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -408,7 +409,10 @@ const ListView = () => {
   const movies = list.items?.filter(i => i.type === 'movie') || [];
   const songs = list.items?.filter(i => i.type === 'song') || [];
   const firstItem = list.items?.[0];
-  const placeholderImg = '/placeholder.png';
+  const placeholderImg = '/titulo.png';
+
+  // Get cover from list or first item
+  const coverImage = list.cover_image_url || (list.items?.[0]?.image_url) || placeholderImg;
 
   return (
     <div className="lv-premium-container">
@@ -427,7 +431,7 @@ const ListView = () => {
         
         <div className="lv-header-content">
           <img 
-            src={list.cover_image_url || firstItem?.image_url || placeholderImg} 
+            src={coverImage} 
             className="lv-main-cover animate-fadeIn" 
             alt="" 
           />

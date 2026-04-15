@@ -9,6 +9,7 @@ import { MovieCard, SongCard } from '../components/Cards';
 import { useAuth } from '../context/AuthContext';
 import { recommendationApi, spotifyApi, movieApi } from '../api';
 import LoadingDots from '../components/LoadingDots';
+import { socket } from '../App';
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -107,6 +108,22 @@ const Home = () => {
 
     loadData();
   }, [isAuthenticated, spotifyConnected, user?.letterboxd_username]);
+
+  // Real-time: update when friends get new recommendations
+  useEffect(() => {
+    const handleNewRecommendation = () => {
+      if (!user?.id) return;
+      recommendationApi.getHistory(user.id)
+        .then(res => setRecentMovies(res.data || []))
+        .catch(() => {});
+    };
+
+    socket.on('rec_generated', handleNewRecommendation);
+
+    return () => {
+      socket.off('rec_generated', handleNewRecommendation);
+    };
+  }, [user?.id]);
 
   const handleSpotifyLogin = () => {
     window.location.href = '/api/auth/spotify';

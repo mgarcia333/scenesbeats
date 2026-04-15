@@ -8,6 +8,7 @@ import {
   ChevronRight, Trash2, X, Check
 } from 'lucide-react';
 import LoadingDots from '../components/LoadingDots';
+import { socket } from '../App';
 
 /* ── Create-list inline form ─────────────────── */
 const CreateListModal = ({ onClose, onCreate }) => {
@@ -84,6 +85,9 @@ const ListCard = ({ list, onDelete, onClick }) => {
   // Pick cover: first item image, or gradient placeholder
   const cover = list.cover_image_url || list.items?.[0]?.image_url;
 
+  // Fallback: use default placeholder image
+  const fallbackImg = '/titulo.png';
+
   return (
     <div className="list-card" onClick={onClick}>
       {/* Cover */}
@@ -91,9 +95,7 @@ const ListCard = ({ list, onDelete, onClick }) => {
         {cover ? (
           <img src={cover} alt={list.name} className="list-card-img" />
         ) : (
-          <div className="list-card-placeholder">
-            <ListMusic size={32} style={{ opacity: 0.4 }} />
-          </div>
+          <img src={fallbackImg} alt="" className="list-card-img" />
         )}
         {/* Badges for multiple covers */}
         {list.items?.length > 1 && (
@@ -179,6 +181,26 @@ const Lists = () => {
   }, [user?.id]);
 
   useEffect(() => { fetchLists(); }, [fetchLists]);
+
+  // Real-time: listen for new lists or deletions
+  useEffect(() => {
+    const handleNewList = (data) => {
+      if (data.user_id === user?.id) return;
+      fetchLists();
+    };
+
+    const handleListDeleted = (data) => {
+      setLists(prev => prev.filter(l => l.id !== data.list_id));
+    };
+
+    socket.on('list_created', handleNewList);
+    socket.on('list_deleted', handleListDeleted);
+
+    return () => {
+      socket.off('list_created', handleNewList);
+      socket.off('list_deleted', handleListDeleted);
+    };
+  }, [user?.id]);
 
   const handleCreate = async (name) => {
     try {

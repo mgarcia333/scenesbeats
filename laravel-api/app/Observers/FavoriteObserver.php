@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Favorite;
 use App\Models\Activity;
+use App\Helpers\NodeBroadcaster;
 
 class FavoriteObserver
 {
@@ -23,6 +24,13 @@ class FavoriteObserver
                 'image_url' => $favorite->image_url,
                 'position' => $favorite->position
             ]
+        ]);
+
+        NodeBroadcaster::broadcast('favorite_added', [
+            'user_id' => $favorite->user_id,
+            'type' => $favorite->type,
+            'title' => $favorite->title,
+            'position' => $favorite->position
         ]);
     }
 }

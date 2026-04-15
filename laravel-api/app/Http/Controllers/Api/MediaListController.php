@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MediaList;
 use App\Models\MediaListItem;
 use App\Models\Activity;
+use App\Helpers\NodeBroadcaster;
 use Illuminate\Http\Request;
 
 class MediaListController extends Controller
@@ -54,6 +55,13 @@ class MediaListController extends Controller
             ]
         ]);
 
+        // Broadcast new list to other users
+        NodeBroadcaster::broadcast('list_created', [
+            'list_id' => $list->id,
+            'user_id' => $list->user_id,
+            'name' => $list->name
+        ]);
+
         return response()->json($list, 201);
     }
 
@@ -89,7 +97,15 @@ class MediaListController extends Controller
             return response()->json(['error' => 'Not Found'], 404);
         }
 
+        $listId = $list->id;
         $list->delete();
+        
+        // Broadcast list deletion
+        NodeBroadcaster::broadcast('list_deleted', [
+            'list_id' => $listId,
+            'user_id' => $list->user_id
+        ]);
+        
         return response()->json(['message' => 'Deleted successfully']);
     }
 

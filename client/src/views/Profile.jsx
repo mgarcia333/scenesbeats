@@ -11,6 +11,7 @@ import {
 import LoadingDots from '../components/LoadingDots';
 import HorizontalScroll from '../components/HorizontalScroll';
 import { MovieCard, SongCard } from '../components/Cards';
+import { socket } from '../App';
 
 /* ─────────────────────────────────────────────
    Favorite Search Modal
@@ -479,6 +480,36 @@ const Profile = () => {
         setMyFavorites([]);
       })
       .finally(() => setLoadingFavs(false));
+  }, [user?.id]);
+
+  // Real-time updates for lists and favorites
+  useEffect(() => {
+    const handleListUpdated = (data) => {
+      if (data.user_id === user?.id) return;
+      listsApi.getAll(user.id).then(res => setMyLists(res.data || [])).catch(() => {});
+    };
+
+    const handleFavoriteAdded = (data) => {
+      if (data.user_id === user?.id) return;
+      favoritesApi.getAll(user.id).then(res => setMyFavorites(res.data || [])).catch(() => {});
+    };
+
+    const handleFriendListUpdated = () => {
+      if (!user?.id) return;
+      socialApi.getFriends(user.id).then(res => setFriends(res.data)).catch(() => {});
+    };
+
+    socket.on('list_created', handleListUpdated);
+    socket.on('favorite_added', handleFavoriteAdded);
+    socket.on('friend_accepted', handleFriendListUpdated);
+    socket.on('friend_removed', handleFriendListUpdated);
+
+    return () => {
+      socket.off('list_created', handleListUpdated);
+      socket.off('favorite_added', handleFavoriteAdded);
+      socket.off('friend_accepted', handleFriendListUpdated);
+      socket.off('friend_removed', handleFriendListUpdated);
+    };
   }, [user?.id]);
 
   const handleSaveFavorite = async (data) => {
