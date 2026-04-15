@@ -305,7 +305,7 @@ Esta es una aplicación propietaria. El código fuente y los activos son propied
 
 ## 👥 Equipo de Desarrollo
 
-- **Desarrollo Principal**: [Miguel Garcia](https://github.com/mgarcia333)
+- **Desarrollo Principal**: [Moisés Garcia](https://github.com/mgarcia333)
 - **Infraestructura**: Docker, Nginx, Cloudflare
 - **IA**: Google Gemini API Integration
 
