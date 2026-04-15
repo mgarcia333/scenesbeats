@@ -16,12 +16,13 @@ RUN npm run build
 # Stage 2: Serve with Nginx and Proxy
 FROM nginx:alpine
 
-# Generar un certificado SSL Autofirmado (obligatorio para Spotify)
+# Generar certificado SSL (para desarrollo/pruebas)
+# Para producción real, usa certificados de Let's Encrypt
 RUN apk add --no-cache openssl
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/ssl/private/nginx-selfsigned.key \
     -out /etc/ssl/certs/nginx-selfsigned.crt \
-    -subj "/C=ES/ST=Madrid/L=Madrid/O=ScenesBeats/CN=204.168.248.102"
+    -subj "/C=ES/ST=Madrid/L=Madrid/O=ScenesBeats/CN=scenesbeats.com"
 
 # Copy built React files
 COPY --from=builder /app/dist /usr/share/nginx/html
