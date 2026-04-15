@@ -47,6 +47,12 @@ const Chat = () => {
           setMessages(prev => [...prev, {
             ...data,
             id: data.id || Date.now(),
+            user_id: data.userId, // Align with Laravel
+            item_id: data.itemId,
+            item_type: data.itemType,
+            item_title: data.itemTitle,
+            item_image: data.itemImage,
+            item_subtitle: data.itemSubtitle,
             user: { id: data.userId, avatar: data.avatar, name: data.userName },
             created_at: data.created_at || new Date().toISOString()
           }]);
@@ -195,23 +201,29 @@ const Chat = () => {
 
   const renderMediaCard = (msg) => {
     const isMe = msg.user_id === user?.id || msg.user?.id === user?.id;
-    const navigateTo = msg.type === 'list' 
-      ? `/list/${msg.item_id || msg.itemId}` 
-      : (msg.type === 'movie' ? `/movie/${msg.item_id || msg.itemId}` : `/song/${msg.item_id || msg.itemId}`);
+    const itemId = msg.item_id || msg.itemId;
+    const type = msg.type;
+    
+    const navigateTo = type === 'list' 
+      ? `/list/${itemId}` 
+      : (type === 'movie' ? `/movie/${itemId}` : `/song/${itemId}`);
 
-    const Icon = msg.type === 'list' ? ListIcon : (msg.type === 'movie' ? Film : Music);
+    const Icon = type === 'list' ? ListIcon : (type === 'movie' ? Film : Music);
+    
+    // Robust image detection
+    const image = msg.item_image || msg.itemImage || msg.image_url || msg.poster;
 
     return (
       <div className="chat-media-card" onClick={() => navigate(navigateTo)}>
         <div className="media-card-img">
-          <img src={msg.item_image || msg.itemImage} alt="" />
+          <img src={image || 'https://via.placeholder.com/150'} alt="" />
           <div className="media-card-icon-overlay">
             <Icon size={16} />
           </div>
         </div>
         <div className="media-card-info">
-          <span className="media-card-title">{msg.item_title || msg.itemTitle}</span>
-          <span className="media-card-subtitle">{msg.item_subtitle || msg.itemSubtitle}</span>
+          <span className="media-card-title">{msg.item_title || msg.itemTitle || msg.title}</span>
+          <span className="media-card-subtitle">{msg.item_subtitle || msg.itemSubtitle || msg.subtitle}</span>
         </div>
       </div>
     );

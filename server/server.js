@@ -1,11 +1,9 @@
+import 'dotenv/config';
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { Server } from "socket.io";
-
-dotenv.config();
 
 // Global crash protection
 process.on('uncaughtException', (err) => {
@@ -21,7 +19,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://127.0.0.1:5171", "http://localhost:5171"],
+    origin: [process.env.FRONTEND_URL, "http://127.0.0.1:5171", "http://localhost:5171"],
     credentials: true,
   }
 });
@@ -31,7 +29,7 @@ const userSockets = new Map(); // userId -> set of socket IDs
 
 app.use(
   cors({
-    origin: ["http://127.0.0.1:5171", "http://localhost:5171"],
+    origin: [process.env.FRONTEND_URL, "http://127.0.0.1:5171", "http://localhost:5171"],
     credentials: true,
   }),
 );
@@ -71,6 +69,10 @@ app.post("/api/internal/broadcast", (req, res) => {
       socketIds.forEach(sid => io.to(sid).emit(event, data));
       console.log(`   Directed to user: ${data.recipient_id} (${socketIds.size} sockets)`);
     }
+  } else if (data.list_id) {
+    // Broadcast list updates to users in that list's room
+    io.to(`list_${data.list_id}`).emit(event, data);
+    console.log(`   Broadcast to list room: list_${data.list_id}`);
   } else {
     // Otherwise broadcast to all
     io.emit(event, data);
@@ -96,6 +98,9 @@ io.on("connection", (socket) => {
     userSockets.get(uid).add(socket.id);
     socket.userId = uid;
     console.log(`User ${uid} registered with socket ${socket.id}`);
+    
+    // Notify others that this user is online
+    io.emit('user_status', { userId: uid, status: 'online' });
   });
 
   // Extract Spotify token from cookies
@@ -122,10 +127,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_msg", async (data) => {
-    const { roomId, userId, content, type, gifUrl, itemId, itemType, itemTitle, itemImage, itemSubtitle } = data;
+    const { roomId, userId, content, type, itemId, itemType, itemTitle, itemImage, itemSubtitle } = data;
+    // Handle both snake_case and camelCase for gif_url
+    const gif_url = data.gif_url || data.gifUrl;
     
     // 1. Broadcast to the room
-    socket.to(roomId).emit("new_msg", data);
+    socket.to(roomId).emit("new_msg", { ...data, gif_url });
 
     // 2. Persist to Laravel
     try {
@@ -133,7 +140,7 @@ io.on("connection", (socket) => {
         user_id: userId,
         content,
         type: type || 'text',
-        gif_url: gifUrl,
+        gif_url: gif_url,
         item_id: itemId,
         item_type: itemType,
         item_title: itemTitle,
@@ -141,7 +148,7 @@ io.on("connection", (socket) => {
         item_subtitle: itemSubtitle
       });
     } catch (err) {
-      console.error("Failed to persist message:", err.message);
+      console.error("SERVER[ERROR]: Failed to persist message:", err.message);
     }
   });
 
@@ -155,7 +162,10 @@ io.on("connection", (socket) => {
     if (socket.userId && userSockets.has(socket.userId)) {
       userSockets.get(socket.userId).delete(socket.id);
       if (userSockets.get(socket.userId).size === 0) {
-        userSockets.delete(socket.userId);
+        const uid = socket.userId;
+        userSockets.delete(uid);
+        // Notify others that this user is offline
+        io.emit('user_status', { userId: uid, status: 'offline' });
       }
     }
     if (monitor) monitor.stop();

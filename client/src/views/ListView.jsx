@@ -9,6 +9,7 @@ import {
   ListMusic, ExternalLink, Check, ChevronDown, ChevronUp, Search, Plus,
   Users, UserPlus, Wand2, Share2, Loader2, Info, Sparkle
 } from 'lucide-react';
+import { socket } from '../App';
 
 /* ── Item card ────────────────────────────── */
 const ItemCard = ({ item, canEdit, onRemove, t }) => {
@@ -191,7 +192,27 @@ const ListView = () => {
   const [searching, setSearching] = useState(false);
   const [searchType, setSearchType] = useState('movie');
 
-  useEffect(() => { if (id) fetchList(); }, [id]);
+  useEffect(() => { 
+    if (id) {
+      fetchList(); 
+      
+      // Join real-time list room
+      const room = `list_${id}`;
+      socket.emit('join_room', room);
+      
+      socket.on('list_updated', (data) => {
+        console.log("📝 List updated remotely:", data);
+        // We re-fetch to get the fresh data from Laravel
+        fetchList();
+      });
+
+      return () => {
+        socket.emit('leave_room', room);
+        socket.off('list_updated');
+      };
+    }
+  }, [id]);
+
   useEffect(() => { if (user) fetchFriends(); }, [user]);
 
   const fetchList = async () => {

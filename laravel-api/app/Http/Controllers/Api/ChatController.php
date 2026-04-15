@@ -30,7 +30,7 @@ class ChatController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'content' => 'nullable|string',
-            'type' => 'required|string|in:text,gif,movie,song,list',
+            'type' => 'required|string|in:text,gif,movie,song,list,album,artist',
             'gif_url' => 'nullable|string',
             'item_id' => 'nullable|string',
             'item_type' => 'nullable|string',
@@ -42,9 +42,9 @@ class ChatController extends Controller
         $message = ChatMessage::create([
             'room_id' => $room_id,
             'user_id' => $validated['user_id'],
-            'content' => $validated['content'],
+            'content' => $validated['content'] ?? null,
             'type' => $validated['type'],
-            'gif_url' => $validated['gif_url'],
+            'gif_url' => $validated['gif_url'] ?? null,
             'item_id' => $validated['item_id'] ?? null,
             'item_type' => $validated['item_type'] ?? null,
             'item_title' => $validated['item_title'] ?? null,

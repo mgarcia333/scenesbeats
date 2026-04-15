@@ -39,6 +39,13 @@ Route::delete('/friendships/{id}', [FriendshipController::class, 'destroy']);
 // Community Activity
 use App\Http\Controllers\Api\ActivityController;
 Route::get('/activities', [ActivityController::class, 'index']);
+Route::post('/activities', [ActivityController::class, 'store']);
+Route::get('/users/{id}/activities', function ($id) {
+    return App\Models\Activity::where('user_id', $id)
+        ->orderBy('created_at', 'desc')
+        ->limit(20)
+        ->get();
+});
 
 // Chat System
 use App\Http\Controllers\Api\ChatController;
@@ -62,7 +69,12 @@ Route::get('/users/search', function (Request $request) {
 Route::get('/users/suggestions', [\App\Http\Controllers\Api\UserController::class, 'suggestions']);
 
 Route::get('/users/{id}', function ($id) {
-    return App\Models\User::with(['lists'])->findOrFail($id);
+    return App\Models\User::with(['lists', 'favorites'])->findOrFail($id);
+});
+
+Route::get('/users/{id}/friends', function ($id) {
+    $user = App\Models\User::findOrFail($id);
+    return response()->json($user->friends());
 });
 
 // Auth / User Sync

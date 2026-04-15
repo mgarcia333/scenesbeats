@@ -91,21 +91,22 @@ const UserSearchResultCard = ({ result, onAdd, t, isFriend, isMe }) => {
   );
 };
 
-const ArtistCard = ({ artist, t }) => (
-  <div className="person-card animate-fadeIn">
-    <div className="person-img-box artist">
-      {artist.image ? (
-        <img src={artist.image} alt={artist.name} className="artist-img" />
-      ) : (
-        <div className="person-placeholder"><Music size={24} /></div>
-      )}
+const ArtistCard = ({ artist, t }) => {
+  const imageUrl = artist.image || (artist.images && artist.images[0]?.url) || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop";
+  const genresText = Array.isArray(artist.genres) ? artist.genres.join(', ') : artist.genres || t('search.musician');
+
+  return (
+    <div className="person-card animate-fadeIn">
+      <div className="person-img-box artist">
+        <img src={imageUrl} alt={artist.name} className="artist-img" />
+      </div>
+      <div className="person-info">
+        <div className="person-name">{artist.name}</div>
+        <div className="person-role">{genresText}</div>
+      </div>
     </div>
-    <div className="person-info">
-      <div className="person-name">{artist.name}</div>
-      <div className="person-role">{artist.genres || t('search.musician')}</div>
-    </div>
-  </div>
-);
+  );
+};
 
 const RecentSearchItem = ({ item, onClick, onDelete }) => {
   const icon = item.type === 'movies' ? <Clapperboard size={14} /> :
@@ -176,7 +177,8 @@ const Search = () => {
           break;
         case 'artists':
           res = await spotifyApi.searchArtists(term);
-          setResults(res.data);
+          const artistItems = res.data?.artists?.items || [];
+          setResults(artistItems);
           break;
         case 'users':
           res = await socialApi.searchUsers(term);
@@ -297,7 +299,7 @@ const Search = () => {
           </div>
         ) : results.length > 0 ? (
           <div className={searchType === 'movies' || searchType === 'music' ? 'results-grid' : 'results-list'}>
-            {results.map((item, idx) => {
+            {Array.isArray(results) && results.map((item, idx) => {
               if (searchType === 'movies') return <MovieCard key={item.id + idx} movie={item} />;
               if (searchType === 'music') return <SongCard key={item.id + idx} song={item} />;
               if (searchType === 'people') return <PersonCard key={item.id + idx} person={item} t={t} />;

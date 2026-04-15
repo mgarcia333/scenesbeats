@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const laravelApi = axios.create({
-    baseURL: process.env.LARAVEL_API_URL || 'http://localhost:8000/api',
+    baseURL: process.env.LARAVEL_API_URL || 'http://127.0.0.1:8000/api',
 });
 
 export const saveRecommendationHistory = async (userId, recommendations) => {
@@ -28,6 +28,18 @@ export const saveChatMessage = async (roomId, data) => {
             status: error.response?.status
         });
         throw error;
+    }
+};
+
+/**
+ * Save an activity (like a Spotify play) to the Laravel backend.
+ */
+export const saveActivity = async (data) => {
+    try {
+        const response = await laravelApi.post('/activities', data);
+        return response.data;
+    } catch (error) {
+        console.error('Error saving activity to Laravel:', error.response?.data || error.message);
     }
 };
 

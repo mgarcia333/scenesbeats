@@ -25,7 +25,8 @@ const MediaPickerModal = ({ onSelect, onClose }) => {
     try {
       if (activeTab === 'listas') {
         const res = await listsApi.getAll(user.id);
-        setItems(res.data.map(l => ({
+        const data = Array.isArray(res.data) ? res.data : [];
+        setItems(data.map(l => ({
           id: l.id,
           type: 'list',
           title: l.name,
@@ -41,7 +42,8 @@ const MediaPickerModal = ({ onSelect, onClose }) => {
              const username = user.letterboxd_username;
              if (username) {
                const res = await movieApi.getLetterboxd(username);
-               const formatted = res.data.slice(0, 10).map(m => ({
+               const data = Array.isArray(res.data) ? res.data : [];
+               const formatted = data.slice(0, 10).map(m => ({
                  id: m.id,
                  type: 'movie',
                  title: m.title,
@@ -61,13 +63,18 @@ const MediaPickerModal = ({ onSelect, onClose }) => {
              setItems(recentMusica);
            } else {
              const res = await spotifyApi.getRecentlyPlayed(10);
-             const formatted = res.data.map(t => ({
-               id: t.id,
-               type: 'song',
-               title: t.name,
-               image: t.album?.images[0]?.url,
-               subtitle: t.artists?.map(a => a.name).join(', ')
-             }));
+             // Spotify recently played returns { items: [...] }
+             const data = res.data?.items && Array.isArray(res.data.items) ? res.data.items : [];
+             const formatted = data.map(item => {
+               const track = item.track || item;
+               return {
+                 id: track.id,
+                 type: 'song',
+                 title: track.name,
+                 image: track.album?.images[0]?.url,
+                 subtitle: track.artists?.map(a => a.name).join(', ')
+               };
+             });
              setRecentMusica(formatted);
              setItems(formatted);
            }
@@ -88,16 +95,19 @@ const MediaPickerModal = ({ onSelect, onClose }) => {
     try {
       if (activeTab === 'peliculas') {
         const res = await movieApi.search(query);
-        setItems(res.data.slice(0, 15).map(m => ({
+        const data = Array.isArray(res.data) ? res.data : [];
+        setItems(data.slice(0, 15).map(m => ({
           id: m.id,
           type: 'movie',
           title: m.title,
-          image: m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Poster',
-          subtitle: m.release_date?.split('-')[0] || t('common.movie')
+          image: m.poster || 'https://images.unsplash.com/photo-1485846234645-a62644ffb917?q=80&w=300&h=450&auto=format&fit=crop',
+          subtitle: m.year || t('common.movie')
         })));
       } else if (activeTab === 'musica') {
         const res = await spotifyApi.searchTracks(query);
-        setItems(res.data.map(t => ({
+        // Spotify search returns { tracks: { items: [...] } }
+        const data = res.data?.tracks?.items && Array.isArray(res.data.tracks.items) ? res.data.tracks.items : [];
+        setItems(data.map(t => ({
           id: t.id,
           type: 'song',
           title: t.name,

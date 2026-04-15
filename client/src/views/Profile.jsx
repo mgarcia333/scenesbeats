@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { socialApi, spotifyApi, movieApi, favoritesApi, listsApi, authApi } from '../api';
 import {
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import LoadingDots from '../components/LoadingDots';
 import HorizontalScroll from '../components/HorizontalScroll';
+import { MovieCard, SongCard } from '../components/Cards';
 
 /* ─────────────────────────────────────────────
    Favorite Search Modal
@@ -47,7 +48,8 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
         switch (type) {
           case 'movie_fav':
             res = await movieApi.search(val);
-            setResults(res.data.map(m => ({
+            const movieData = Array.isArray(res.data) ? res.data : [];
+            setResults(movieData.map(m => ({
               id: m.id,
               title: m.title,
               subtitle: m.year,
@@ -57,7 +59,8 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
           case 'actor_fav':
           case 'director_fav':
             res = await movieApi.searchPeople(val);
-            setResults(res.data.map(p => ({
+            const peopleData = Array.isArray(res.data) ? res.data : [];
+            setResults(peopleData.map(p => ({
               id: p.id,
               title: p.name,
               subtitle: p.known_for,
@@ -66,29 +69,32 @@ const FavoriteSearchModal = ({ type, position, onClose, onSave, userId }) => {
             break;
           case 'song_fav':
             res = await spotifyApi.searchTracks(val);
-            setResults(res.data.map(t => ({
+            const trackData = res.data?.tracks?.items || [];
+            setResults(trackData.map(t => ({
               id: t.id,
               title: t.name,
-              subtitle: t.artist,
-              image: t.image
+              subtitle: t.artists?.map(a => a.name).join(', '),
+              image: t.album?.images[0]?.url
             })));
             break;
           case 'album_fav':
             res = await spotifyApi.searchAlbums(val);
-            setResults(res.data.map(a => ({
+            const albumData = res.data?.albums?.items || [];
+            setResults(albumData.map(a => ({
               id: a.id,
               title: a.name,
-              subtitle: a.artist,
-              image: a.image
+              subtitle: a.artists?.map(art => art.name).join(', '),
+              image: a.images[0]?.url
             })));
             break;
           case 'artist_fav':
             res = await spotifyApi.searchArtists(val);
-            setResults(res.data.map(a => ({
+            const artistData = res.data?.artists?.items || [];
+            setResults(artistData.map(a => ({
               id: a.id,
               title: a.name,
-              subtitle: a.genres,
-              image: a.image
+              subtitle: a.genres?.join(', '),
+              image: a.images[0]?.url
             })));
             break;
           default:
@@ -289,6 +295,16 @@ const Profile = () => {
   const { user, logout, spotifyConnected, setSpotifyConnected, connectLetterboxd, connectSpotify, refreshAuth } = useAuth();
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
+  
+  const friendsRef = useRef(null);
+  const listsRef = useRef(null);
+  const tastesRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const [lbMovies, setLbMovies] = useState([]);
   const [loadingLB, setLoadingLB] = useState(false);
@@ -348,7 +364,7 @@ const Profile = () => {
         const thisMonth = now.toISOString().slice(0, 7);
         
         const moviesThisMonth = movies.filter(movie => {
-          const watchedDate = movie.watched_date || movie.date_watched || movie.watchDate;
+          const watchedDate = movie.watchedDate || movie.watched_date || movie.date_watched || movie.watchDate;
           if (!watchedDate) return false;
           return watchedDate.startsWith(thisMonth);
         });
@@ -359,35 +375,59 @@ const Profile = () => {
       .finally(() => setLoadingLB(false));
   }, [user?.letterboxd_username]);
 
-  // Load Spotify recently played
+  // Load Spotify recently played with multi-page support for today's count
   useEffect(() => {
     if (!spotifyConnected) return;
-    setLoadingSpotify(true);
-    spotifyApi.getRecentlyPlayed(50)
-      .then(res => {
-        if (res.data?.items) {
-          const now = new Date();
-          const todayStr = now.toISOString().split('T')[0];
-          
-          const songsToday = res.data.items.filter(item => {
-            const playedAt = item.played_at?.split('T')[0];
-            return playedAt === todayStr;
-          });
-          
-          setSpotifyTodayCount(songsToday.length);
-          
-          setRecentSongs(res.data.items.slice(0, 20).map(item => ({
-            id: item.track.id,
-            name: item.track.name,
-            artist: item.track.artists[0].name,
-            artwork: item.track.album.images[0]?.url,
-            previewUrl: item.track.preview_url,
-            spotifyUrl: item.track.external_urls.spotify,
-          })));
+
+    const fetchRecentlyPlayed = async () => {
+      setLoadingSpotify(true);
+      try {
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        
+        // Fetch first page (max 50)
+        const res1 = await spotifyApi.getRecentlyPlayed(50);
+        let items = res1.data?.items || [];
+        
+        // If the 50th item is still from today, we might have more today
+        const lastItemDate = items[items.length - 1]?.played_at?.split('T')[0];
+        
+        if (items.length === 50 && lastItemDate === todayStr) {
+          try {
+            // Get timestamp of oldest track to use as 'before' cursor
+            const oldestTimestamp = new Date(items[items.length - 1].played_at).getTime();
+            const res2 = await spotifyApi.getRecentlyPlayed(50, oldestTimestamp);
+            if (res2.data?.items) {
+              items = [...items, ...res2.data.items];
+            }
+          } catch (e) {
+            console.warn("Could not fetch second page of Spotify history");
+          }
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingSpotify(false));
+
+        const songsToday = items.filter(item => {
+          const playedAt = item.played_at?.split('T')[0];
+          return playedAt === todayStr;
+        });
+        
+        setSpotifyTodayCount(songsToday.length);
+        
+        setRecentSongs(items.slice(0, 20).map(item => ({
+          id: item.track.id,
+          name: item.track.name,
+          artist: item.track.artists[0].name,
+          artwork: item.track.album.images[0]?.url,
+          previewUrl: item.track.preview_url,
+          spotifyUrl: item.track.external_urls.spotify,
+        })));
+      } catch (err) {
+        console.error("Error loading Spotify stats:", err);
+      } finally {
+        setLoadingSpotify(false);
+      }
+    };
+
+    fetchRecentlyPlayed();
   }, [spotifyConnected]);
 
   // Real-time polling for Currently Playing - only on first load
@@ -479,7 +519,7 @@ const Profile = () => {
 
   const FavoriteSlot = ({ type, position }) => {
     const fav = getFavoriteAt(type, position);
-    const isPerson = type === 'actor_fav' || type === 'director_fav';
+    const isPerson = type === 'actor_fav' || type === 'director_fav' || type === 'artist_fav';
     const isMedia = type === 'movie_fav' || type === 'song_fav' || type === 'album_fav';
     
     if (fav) {
@@ -547,8 +587,8 @@ const Profile = () => {
     <div className="view-container profile-view">
       {/* Header with logout button */}
       <div className="profile-top-bar">
-        <h2 className="profile-title-mobile">Mi Perfil</h2>
-        <button className="profile-logout-btn" onClick={handleLogout} title={t('auth.logout') || 'Cerrar Sesión'}>
+        <h2 className="profile-title-mobile">{t('profile.myProfile')}</h2>
+        <button className="profile-logout-btn" onClick={handleLogout} title={t('profile.logout') || 'Cerrar Sesión'}>
           <LogOut size={18} />
         </button>
       </div>
@@ -572,23 +612,31 @@ const Profile = () => {
 
           {/* Stats con counts dinámicos */}
           <div className="profile-stats">
+            <div className="stat-item" onClick={() => scrollToSection(tastesRef)} style={{ cursor: 'pointer' }}>
+              <span className="stat-value">{myFavorites.length || 0}</span>
+              <span className="stat-label">{t('profile.myTastes')}</span>
+            </div>
             <div className="stat-item highlight">
               <Flame size={14} className="stat-icon" />
               <div className="stat-content">
                 <span className="stat-value">{spotifyTodayCount}</span>
-                <span className="stat-label">hoy</span>
+                <span className="stat-label">{t('profile.today')}</span>
               </div>
             </div>
             <div className="stat-item highlight">
               <Film size={14} className="stat-icon" />
               <div className="stat-content">
                 <span className="stat-value">{letterboxdThisMonth}</span>
-                <span className="stat-label">mes</span>
+                <span className="stat-label">{t('profile.month')}</span>
               </div>
             </div>
-            <div className="stat-item">
+            <div className="stat-item" onClick={() => scrollToSection(listsRef)} style={{ cursor: 'pointer' }}>
+              <span className="stat-value">{myLists.length || 0}</span>
+              <span className="stat-label">{t('common.lists')}</span>
+            </div>
+            <div className="stat-item" onClick={() => scrollToSection(friendsRef)} style={{ cursor: 'pointer' }}>
               <span className="stat-value">{friends.length || 0}</span>
-              <span className="stat-label">Amigos</span>
+              <span className="stat-label">{t('profile.friends')}</span>
             </div>
           </div>
 
@@ -631,7 +679,7 @@ const Profile = () => {
       )}
 
       {/* ── Gustos (Favorites) ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={tastesRef}>
         <h2 className="section-title">{t('profile.myTastes')}</h2>
         <div className="gustos-container">
           <GustoSection title={t('profile.movies')} type="movie_fav" icon={Film} />
@@ -648,20 +696,20 @@ const Profile = () => {
       </section>
 
       {/* ── Friends Section ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={friendsRef}>
         <h2 className="section-title">{t('profile.friends')} ({friends.length})</h2>
         {friends.length > 0 ? (
           <HorizontalScroll>
             {friends.map(friend => (
-              <div 
+              <Link
+                to={`/user/${friend.id}`}
                 key={friend.id} 
                 className="friend-circle-item" 
-                onClick={() => navigate(`/user/${friend.id}`)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
               >
                 <img src={friend.avatar || `https://ui-avatars.com/api/?name=${friend.name}`} alt="" className="friend-avatar-circle" />
                 <span className="friend-name-small">{friend.name}</span>
-              </div>
+              </Link>
             ))}
           </HorizontalScroll>
         ) : (
@@ -670,30 +718,30 @@ const Profile = () => {
       </section>
 
       {/* ── My Lists ── */}
-      <section className="feed-section">
+      <section className="feed-section" ref={listsRef}>
         <h2 className="section-title">{t('profile.myLists')}</h2>
         <HorizontalScroll>
-          <div
+          <Link
+            to="/lists"
             className="activity-card"
-            style={{ flex: '0 0 160px', height: '100px', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => navigate('/lists')}
+            style={{ flex: '0 0 140px', height: '100px', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column' }}
           >
             <PlusCircle size={24} style={{ marginBottom: '0.5rem' }} />
             <span className="stat-label" style={{ fontSize: '0.65rem' }}>{t('profile.newList')}</span>
-          </div>
+          </Link>
           {myLists.map(list => (
-            <div
+            <Link
+              to={`/list/${list.id}`}
               key={list.id}
               className="activity-card"
-              style={{ flex: '0 0 160px', height: '100px', cursor: 'pointer' }}
-              onClick={() => navigate(`/list/${list.id}`)}
+              style={{ flex: '0 0 160px', height: '100px', cursor: 'pointer', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', padding: '12px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <ListIcon size={16} color="var(--primary-color)" />
                 <span className="small font-bold" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
               </div>
-              <div className="text-muted small">{list.items?.length || 0} elementos</div>
-            </div>
+              <div className="text-muted small">{list.items?.length || 0} {(list.items?.length === 1 ? t('common.item') : t('common.items')) || 'elementos'}</div>
+            </Link>
           ))}
         </HorizontalScroll>
       </section>
@@ -747,10 +795,7 @@ const Profile = () => {
           ) : (
             <HorizontalScroll>
               {recentSongs.map((song, idx) => (
-                <div key={`${song.id}-${idx}`} className="song-card" style={{ flex: '0 0 120px' }}>
-                  <img src={song.artwork} className="song-artwork" alt={song.name} style={{ width: '120px', height: '120px' }} />
-                  <div className="song-name" style={{ fontSize: '0.75rem' }}>{song.name}</div>
-                </div>
+                <SongCard key={`${song.id}-${idx}`} song={song} />
               ))}
             </HorizontalScroll>
           )}
@@ -775,10 +820,7 @@ const Profile = () => {
           ) : (
             <HorizontalScroll>
               {lbMovies.map((movie, idx) => (
-                <div key={`${movie.id}-${idx}`} className="movie-card" style={{ flex: '0 0 100px' }}>
-                  <img src={movie.poster} className="movie-artwork" alt={movie.title} style={{ width: '100px', height: '150px' }} />
-                  <div className="movie-name" style={{ fontSize: '0.75rem' }}>{movie.title}</div>
-                </div>
+                <MovieCard key={`${movie.id}-${idx}`} movie={movie} />
               ))}
             </HorizontalScroll>
           )}

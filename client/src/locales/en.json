@@ -141,7 +141,12 @@
     "userNotFound": "User not found",
     "publicLists": "Public Lists",
     "noPublicLists": "This user has no public lists yet.",
-    "connections": "Connections"
+    "connections": "Connections",
+    "viewProfile": "View Profile",
+    "today": "today",
+    "month": "month",
+    "myProfile": "My Profile",
+    "addedToFavorites": "added to favorites"
   },
   "settings": {
     "title": "Settings",
@@ -193,9 +198,10 @@
     "noSuggestions": "No suggestions available at the moment.",
     "listened": "listened to",
     "watched": "watched",
-    "createdList": "created the list",
-    "addedFriend": "added",
-    "genRec": "generated a recommendation for",
+    "createdList": "has started a new collection:",
+    "addedFriend": "is now connected with",
+    "genRec": "has invoked a recommendation for",
+    "addedItem": "has added a new piece:",
     "accept": "Accept",
     "reject": "Reject",
     "activities": "Recent activity",
@@ -209,6 +215,7 @@
     "searchPlaceholderMovies": "Search for a movie you're in the mood for...",
     "searchPlaceholderMusic": "Search for that beat in your head...",
     "recommendedSongs": "Recommended Songs",
+    "misChats": "My Chats",
     "noResultsFound": "We couldn't find anything for \"{{query}}\".",
     "tryAnotherVibe": "Try another vibe.",
     "preparingStage": "Preparing the stage...",
@@ -278,7 +285,15 @@
     "movie": "Movie",
     "music": "Music",
     "me": "me",
-    "shareContent": "Share content"
+    "shareContent": "Share content",
+    "activityDefault": "performed an activity.",
+    "live": "LIVE"
+  },
+  "social": {
+    "pending": "Pending",
+    "addFriend": "Add Friend",
+    "sent": "Sent",
+    "friendsCircle": "Friends Circle"
   },
   "detail": {
     "noDescription": "No description available.",

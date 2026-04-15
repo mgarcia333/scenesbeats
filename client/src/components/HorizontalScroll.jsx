@@ -7,22 +7,33 @@ const HorizontalScroll = ({ children }) => {
   const [scrollLeft, setScrollLeft] = useState(0);
 
   const handleMouseDown = (e) => {
-    setIsDragging(true);
     setStartX(e.pageX - scrollRef.current.offsetLeft);
     setScrollLeft(scrollRef.current.scrollLeft);
-    // Add custom class to body to prevent text selection during drag
+    // Use a temp ref or state to track if we *might* start dragging
+    scrollRef.current.dataset.maybeDragging = 'true';
     document.body.classList.add('grabbing');
   };
 
   const stopDragging = () => {
     setIsDragging(false);
+    scrollRef.current.dataset.maybeDragging = 'false';
     document.body.classList.remove('grabbing');
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
+    if (scrollRef.current.dataset.maybeDragging !== 'true') return;
+    
     const x = e.pageX - scrollRef.current.offsetLeft;
+    const distance = Math.abs(x - startX);
+    
+    // Threshold of 5 pixels to distinguish from a click
+    if (distance > 5 && !isDragging) {
+      setIsDragging(true);
+    }
+
+    if (!isDragging) return;
+
+    e.preventDefault();
     const walk = (x - startX) * 2; // Scroll speed
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
@@ -49,9 +60,6 @@ const HorizontalScroll = ({ children }) => {
       onMouseLeave={stopDragging}
       onMouseUp={stopDragging}
       onMouseMove={handleMouseMove}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={stopDragging}
     >
       {children}
     </div>

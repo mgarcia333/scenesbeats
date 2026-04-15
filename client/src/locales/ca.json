@@ -140,7 +140,12 @@
     "userNotFound": "Usuari no trobat",
     "publicLists": "Llistes Públiques",
     "noPublicLists": "Aquest usuari encara no té llistes públiques.",
-    "connections": "Connexions"
+    "connections": "Connexions",
+    "viewProfile": "Veure Perfil",
+    "today": "avui",
+    "month": "mes",
+    "myProfile": "El Meu Perfil",
+    "addedToFavorites": "ha afegit a preferits"
   },
   "settings": {
     "title": "Ajustos",
@@ -192,9 +197,10 @@
     "noSuggestions": "No hi ha suggeriments disponibles en aquest moment.",
     "listened": "ha escoltat",
     "watched": "ha vist",
-    "createdList": "ha creat una nova llista:",
-    "addedFriend": "ara és amic de",
-    "genRec": "ha generat una recomanació per a la llista",
+    "createdList": "ha inaugurat una nova col·lecció:",
+    "addedFriend": "ara connecta amb",
+    "genRec": "ha invocat una recomanació per a",
+    "addedItem": "ha afegit una nova peça:",
     "accept": "Acceptar",
     "reject": "Rebutjar",
     "activities": "Activitat recent",
@@ -208,6 +214,7 @@
     "searchPlaceholderMovies": "Busca una pel·lícula que t'ofereixi...",
     "searchPlaceholderMusic": "Busca aquest ritme que tens al cap...",
     "recommendedSongs": "Cançons Recomanades",
+    "misChats": "Els Meus Xats",
     "noResultsFound": "No hem trobat res per a \"{{query}}\".",
     "tryAnotherVibe": "Prova una altra vibra.",
     "preparingStage": "Preparant l'escenari...",
@@ -277,7 +284,15 @@
     "movie": "Pel·lícula",
     "music": "Música",
     "me": "mi",
-    "shareContent": "Compartir contingut"
+    "shareContent": "Compartir contingut",
+    "activityDefault": "ha realitzat una activitat.",
+    "live": "EN DIRECTE"
+  },
+  "social": {
+    "pending": "Pendent",
+    "addFriend": "Afegir Amic",
+    "sent": "Enviat",
+    "friendsCircle": "Cercle d'Amics"
   },
   "detail": {
     "noDescription": "Sense descripció disponible.",

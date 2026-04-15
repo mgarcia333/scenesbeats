@@ -15,6 +15,7 @@ import Lists from './views/Lists';
 import ItemDetail from './views/ItemDetail';
 import UserProfile from './views/UserProfile';
 import Chat from './views/Chat';
+import ToastSystem from './components/ToastSystem';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { io } from 'socket.io-client';
@@ -48,6 +49,7 @@ function App() {
       <AuthProvider>
         <Router>
           <SocketHandler />
+          <ToastSystem />
           <MainLayout />
         </Router>
       </AuthProvider>
@@ -138,14 +140,35 @@ const SocketHandler = () => {
             socket.emit('register_user', user.id);
             
             socket.on('friend_request', (data) => {
-                alert(`Nueva solicitud de amistad de ${data.from}`);
+                window.dispatchEvent(new CustomEvent('toast', { 
+                    detail: { 
+                        title: 'Nueva solicitud', 
+                        message: `${data.from} quiere ser tu amigo`, 
+                        type: 'friend_request' 
+                    } 
+                }));
+            });
+
+            socket.on('friend_accepted', (data) => {
+                window.dispatchEvent(new CustomEvent('toast', { 
+                    detail: { 
+                        title: '¡Solicitud aceptada!', 
+                        message: `${data.friend_name} ahora es tu amigo`, 
+                        type: 'friend_accepted' 
+                    } 
+                }));
+            });
+
+            socket.on('user_status', (data) => {
+                // Global status update - other components can listen if they want
+                // For now just keep it in socket internal state if needed
             });
         }
         
         return () => {
-            socket.off('connect');
-            socket.off('notification');
             socket.off('friend_request');
+            socket.off('friend_accepted');
+            socket.off('user_status');
         };
     }, [user]);
     

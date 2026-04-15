@@ -78,33 +78,34 @@ const Settings = () => {
 
       {/* Language */}
       <div className="settings-group">
-        <h3 className="stat-label" style={{ marginBottom: '1rem' }}>{t('settings.language')}</h3>
+        <h3 className="stat-label">{t('settings.language')}</h3>
+        <p className="song-artist" style={{ marginBottom: '1rem', marginTop: '0.25rem' }}>{t('settings.languageDesc')}</p>
         <div className="settings-card">
-          <div className="settings-row">
-            <div>
-              <div className="song-name">{t('settings.language')}</div>
-              <div className="song-artist">{t('settings.languageDesc')}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                className={`toggle-btn ${i18n.language === 'es' ? 'active' : ''}`}
-                onClick={() => changeLanguage('es')}
-              >
-                ES
-              </button>
-              <button
-                className={`toggle-btn ${i18n.language === 'en' ? 'active' : ''}`}
-                onClick={() => changeLanguage('en')}
-              >
-                EN
-              </button>
-              <button
-                className={`toggle-btn ${i18n.language === 'ca' ? 'active' : ''}`}
-                onClick={() => changeLanguage('ca')}
-              >
-                CA
-              </button>
-            </div>
+          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', padding: '0.5rem 0' }}>
+            <button 
+              className={`lang-flag-btn ${i18n.language === 'es' ? 'active' : ''}`} 
+              onClick={() => changeLanguage('es')}
+              title="Español"
+              style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', padding: 0 }}
+            >
+              <img src="/spain.png" alt="ES" className="flag-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </button>
+            <button 
+              className={`lang-flag-btn ${i18n.language === 'en' ? 'active' : ''}`} 
+              onClick={() => changeLanguage('en')}
+              title="English"
+              style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', padding: 0 }}
+            >
+              <img src="/ing.png" alt="EN" className="flag-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </button>
+            <button 
+              className={`lang-flag-btn ${i18n.language === 'ca' ? 'active' : ''}`} 
+              onClick={() => changeLanguage('ca')}
+              title="Català"
+              style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', padding: 0 }}
+            >
+              <img src="/cat.png" alt="CA" className="flag-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </button>
           </div>
         </div>
       </div>

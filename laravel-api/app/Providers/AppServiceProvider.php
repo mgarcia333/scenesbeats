@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \App\Models\Favorite::observe(\App\Observers\FavoriteObserver::class);
+        \App\Models\MediaListItem::observe(\App\Observers\MediaListItemObserver::class);
     }
 }

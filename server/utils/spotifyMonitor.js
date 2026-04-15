@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { saveActivity } from './laravel.js';
 
 /**
  * SpotifyMonitor
@@ -12,6 +13,7 @@ class SpotifyMonitor {
     this.token = token;
     this.intervalId = null;
     this.lastPlayedAt = null;
+    this.lastTrackId = null;
   }
 
   async start(intervalMs = 45000) {
@@ -35,38 +37,71 @@ class SpotifyMonitor {
 
   async poll() {
     try {
-      const response = await axios.get('https://api.spotify.com/v1/me/player/recently-played?limit=1', {
+      // 1. Poll Currently Playing
+      const response = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
         headers: { 'Authorization': `Bearer ${this.token}` }
       });
-
-      const latestTrack = response.data.items[0];
-      if (!latestTrack) return;
-
-      const playedAt = latestTrack.played_at;
-
-      // If we have a new playedAt timestamp, emit the update
-      if (this.lastPlayedAt && playedAt !== this.lastPlayedAt) {
-        console.log(`[SpotifyMonitor] New track detected for ${this.socket.id}: ${latestTrack.track.name}`);
-        
-        const trackData = {
-          id: latestTrack.track.id,
-          name: latestTrack.track.name,
-          artist: latestTrack.track.artists[0].name,
-          artwork: latestTrack.track.album.images[0]?.url,
-          played_at: latestTrack.played_at
-        };
-
-        this.socket.emit('spotify_update', trackData);
+      
+      const playback = response.data;
+      
+      // If nothing is playing, playback is empty or is_playing is false
+      if (!playback || !playback.is_playing) {
+        // Only emit if we previously had activity
+        if (this.lastTrackId) {
+          this.io.emit('user_activity_update', { 
+            userId: this.socket.userId, 
+            isPlaying: false 
+          });
+          this.lastTrackId = null;
+        }
+        return;
       }
 
-      this.lastPlayedAt = playedAt;
+      const track = playback.item;
+      if (!track) return;
+
+      // Detect track change or significant time jump (optional)
+      if (track.id !== this.lastTrackId) {
+        console.log(`[SpotifyMonitor] Broadcast: User ${this.socket.userId} is listening to ${track.name}`);
+        
+        const activityData = {
+          userId: this.socket.userId,
+          isPlaying: true,
+          track: {
+            id: track.id,
+            name: track.name,
+            artist: track.artists[0].name,
+            artwork: track.album.images[0]?.url,
+            progress_ms: playback.progress_ms,
+            duration_ms: track.duration_ms,
+            timestamp: Date.now()
+          }
+        };
+
+        // 1. Broadcast to Everyone via Sockets
+        this.io.emit('user_activity_update', activityData);
+
+        // 2. Persist to Laravel for History
+        saveActivity({
+          user_id: this.socket.userId,
+          type: 'spotify_track',
+          data: {
+            id: track.id,
+            name: track.name,
+            artist: track.artists[0].name,
+            artwork: track.album.images[0]?.url,
+            spotify_url: track.external_urls?.spotify
+          }
+        });
+
+        this.lastTrackId = track.id;
+      }
     } catch (error) {
-      // If token expired or other error, log and potentially stop
       if (error.response?.status === 401) {
-        console.warn(`[SpotifyMonitor] Token expired for socket ${this.socket.id}, stopping.`);
+        console.warn(`[SpotifyMonitor] Token expired for user ${this.socket.userId}, stopping.`);
         this.stop();
       } else {
-        console.error(`[SpotifyMonitor] Error polling for ${this.socket.id}:`, error.message);
+        console.error(`[SpotifyMonitor] Error polling for ${this.socket.userId}:`, error.message);
       }
     }
   }

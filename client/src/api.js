@@ -60,6 +60,7 @@ export const socialApi = {
   updateRequest: (id, status) => laravelApi.put(`/friendships/${id}`, { status }),
   removeFriend: (id) => laravelApi.delete(`/friendships/${id}`),
   getActivities: () => laravelApi.get('/activities'),
+  getUserActivities: (id) => laravelApi.get(`/users/${id}/activities`),
   searchUsers: (query) => laravelApi.get(`/users/search?query=${query}`),
   getSuggestions: (userId) => laravelApi.get(`/users/suggestions?user_id=${userId}`),
   getUserProfile: (id) => laravelApi.get(`/users/${id}`),
@@ -93,7 +94,10 @@ export const spotifyApi = {
   searchArtists: (query) => nodeApi.get(`/spotify/search-artists?query=${query}`),
   searchTracks: (query) => nodeApi.get(`/spotify/search-tracks?query=${query}`),
   searchAlbums: (query) => nodeApi.get(`/spotify/search-albums?query=${query}`),
-  getRecentlyPlayed: (limit = 20) => nodeApi.get(`/spotify/recently-played?limit=${limit}`),
+  getRecentlyPlayed: (limit = 20, before = null) => {
+    const url = `/spotify/recently-played?limit=${limit}${before ? `&before=${before}` : ''}`;
+    return nodeApi.get(url);
+  },
   getCurrentlyPlaying: () => nodeApi.get('/spotify/currently-playing'),
 };
 

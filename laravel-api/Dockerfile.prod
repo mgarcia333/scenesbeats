@@ -1,0 +1,35 @@
+FROM php:8.2-fpm
+
+# Instalar dependencias del sistema requeridas por Laravel
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip
+
+# Limpiar cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Instalar extensiones de PHP (necesario pdo_mysql para la base de datos)
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# Obtener Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Configurar directorio de trabajo
+WORKDIR /var/www/html
+
+# Copiar archivos
+COPY . .
+
+# Permisos para el usuario web
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Generar autoloader si es posible (en prod)
+# RUN composer install --no-dev --optimize-autoloader
+
+EXPOSE 9000
+CMD ["php-fpm"]

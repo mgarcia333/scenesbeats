@@ -17,13 +17,13 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('content')->nullable();
             $table->string('type')->default('text'); // 'text' | 'gif' | 'movie' | 'song' | 'list'
-            $table->string('gif_url')->nullable();
+            $table->text('gif_url')->nullable();
             
             // Media Sharing
             $table->string('item_id')->nullable();
             $table->string('item_type')->nullable();
             $table->string('item_title')->nullable();
-            $table->string('item_image')->nullable();
+            $table->text('item_image')->nullable();
             $table->string('item_subtitle')->nullable();
 
             $table->timestamps();
