@@ -109,19 +109,25 @@ const Home = () => {
     loadData();
   }, [isAuthenticated, spotifyConnected, user?.letterboxd_username]);
 
-  // Real-time: update when friends get new recommendations
+  // Real-time: re-fetch recommendations when friend activity happens
   useEffect(() => {
-    const handleNewRecommendation = () => {
-      if (!user?.id) return;
+    if (!user?.id) return;
+
+    const refreshRecs = () => {
       recommendationApi.getHistory(user.id)
         .then(res => setRecentMovies(res.data || []))
         .catch(() => {});
     };
 
-    socket.on('rec_generated', handleNewRecommendation);
+    // Friend generated a new recommendation
+    socket.on('rec_generated', refreshRecs);
+
+    // Friend created a list — could affect recommendation history displayed
+    socket.on('list_created', refreshRecs);
 
     return () => {
-      socket.off('rec_generated', handleNewRecommendation);
+      socket.off('rec_generated', refreshRecs);
+      socket.off('list_created',  refreshRecs);
     };
   }, [user?.id]);
 

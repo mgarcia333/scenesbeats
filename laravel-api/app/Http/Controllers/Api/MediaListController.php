@@ -150,6 +150,26 @@ class MediaListController extends Controller
             $list->save();
         }
 
+        // Create activity for item added to list
+        Activity::create([
+            'user_id' => $list->user_id,
+            'type' => 'item_added_to_list',
+            'data' => [
+                'list_id'    => $list->id,
+                'list_name'  => $list->name,
+                'item_title' => $item->title,
+                'item_image' => $item->image_url,
+                'item_type'  => $item->type,
+            ]
+        ]);
+
+        // Broadcast item added to all users in this list's room (collaborators)
+        NodeBroadcaster::broadcast('list_updated', [
+            'list_id' => (int)$id,
+            'action'  => 'item_added',
+            'item'    => $item->toArray(),
+        ]);
+
         return response()->json($item, 201);
     }
 
@@ -161,7 +181,16 @@ class MediaListController extends Controller
             return response()->json(['error' => 'Item Not Found'], 404);
         }
 
+        $itemId = $item->id;
         $item->delete();
+
+        // Broadcast item removed so collaborators see it disappear in real time
+        NodeBroadcaster::broadcast('list_updated', [
+            'list_id' => (int)$id,
+            'action'  => 'item_removed',
+            'item_id' => $itemId,
+        ]);
+
         return response()->json(['message' => 'Item removed from list']);
     }
 

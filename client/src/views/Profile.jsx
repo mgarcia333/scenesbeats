@@ -484,31 +484,55 @@ const Profile = () => {
 
   // Real-time updates for lists and favorites
   useEffect(() => {
-    const handleListUpdated = (data) => {
-      if (data.user_id === user?.id) return;
+    if (!user?.id) return;
+
+    // List created: re-fetch always (handles own + others' collab lists, + multi-tab)
+    const handleListCreated = () => {
       listsApi.getAll(user.id).then(res => setMyLists(res.data || [])).catch(() => {});
     };
 
-    const handleFavoriteAdded = (data) => {
-      if (data.user_id === user?.id) return;
-      favoritesApi.getAll(user.id).then(res => setMyFavorites(res.data || [])).catch(() => {});
+    // List deleted: remove from local state immediately
+    const handleListDeleted = (data) => {
+      setMyLists(prev => prev.filter(l => l.id !== data.list_id));
     };
 
+    // Favorite added: update state directly from event data (no extra API call)
+    const handleFavoriteAdded = (data) => {
+      if (data.user_id !== user.id) return; // only care about own favorites
+      setMyFavorites(prev => {
+        // Replace slot if already occupied (same type + position)
+        const filtered = prev.filter(
+          f => !(f.type === data.favorite?.type && f.position === data.favorite?.position)
+        );
+        return [...filtered, data.favorite];
+      });
+    };
+
+    // Favorite removed: strip from local state immediately
+    const handleFavoriteRemoved = (data) => {
+      if (data.user_id !== user.id) return;
+      setMyFavorites(prev => prev.filter(f => f.id !== data.favorite_id));
+    };
+
+    // Friends updated: re-fetch friend list
     const handleFriendListUpdated = () => {
-      if (!user?.id) return;
       socialApi.getFriends(user.id).then(res => setFriends(res.data)).catch(() => {});
     };
 
-    socket.on('list_created', handleListUpdated);
-    socket.on('favorite_added', handleFavoriteAdded);
-    socket.on('friend_accepted', handleFriendListUpdated);
-    socket.on('friend_removed', handleFriendListUpdated);
+    socket.on('list_created',     handleListCreated);
+    socket.on('list_deleted',     handleListDeleted);
+    socket.on('favorite_added',   handleFavoriteAdded);
+    socket.on('favorite_removed', handleFavoriteRemoved);
+    socket.on('friend_accepted',  handleFriendListUpdated);
+    socket.on('friend_removed',   handleFriendListUpdated);
 
     return () => {
-      socket.off('list_created', handleListUpdated);
-      socket.off('favorite_added', handleFavoriteAdded);
-      socket.off('friend_accepted', handleFriendListUpdated);
-      socket.off('friend_removed', handleFriendListUpdated);
+      socket.off('list_created',     handleListCreated);
+      socket.off('list_deleted',     handleListDeleted);
+      socket.off('favorite_added',   handleFavoriteAdded);
+      socket.off('favorite_removed', handleFavoriteRemoved);
+      socket.off('friend_accepted',  handleFriendListUpdated);
+      socket.off('friend_removed',   handleFriendListUpdated);
     };
   }, [user?.id]);
 

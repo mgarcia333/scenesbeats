@@ -198,19 +198,50 @@ const ListView = () => {
     if (id) {
       fetchList(); 
       
-      // Join real-time list room
+      // Join real-time list room — every collaborator is here
       const room = `list_${id}`;
       socket.emit('join_room', room);
-      
-      socket.on('list_updated', (data) => {
-        console.log("📝 List updated remotely:", data);
-        // We re-fetch to get the fresh data from Laravel
-        fetchList();
-      });
+
+      const handleListUpdated = (data) => {
+        console.log('📝 List updated remotely:', data);
+
+        if (data.action === 'item_added') {
+          // Add only if not already in local state (prevents duplicate if I was the sender)
+          setList(prev => {
+            if (!prev) return prev;
+            const alreadyHas = prev.items?.some(i => i.id === data.item?.id);
+            if (alreadyHas) return prev;
+            return { ...prev, items: [...(prev.items || []), data.item] };
+          });
+
+        } else if (data.action === 'item_removed') {
+          // Remove from local state immediately — safe no-op if already gone
+          setList(prev => {
+            if (!prev) return prev;
+            return { ...prev, items: (prev.items || []).filter(i => i.id !== data.item_id) };
+          });
+
+        } else {
+          // Fallback for any other list_updated event: full re-fetch
+          fetchList();
+        }
+      };
+
+      // If the list is deleted while a collaborator is viewing it,
+      // redirect them back to the lists page.
+      const handleListDeleted = (data) => {
+        if (String(data.list_id) === String(id)) {
+          navigate('/lists', { replace: true });
+        }
+      };
+
+      socket.on('list_updated', handleListUpdated);
+      socket.on('list_deleted', handleListDeleted);
 
       return () => {
         socket.emit('leave_room', room);
-        socket.off('list_updated');
+        socket.off('list_updated', handleListUpdated);
+        socket.off('list_deleted', handleListDeleted);
       };
     }
   }, [id]);

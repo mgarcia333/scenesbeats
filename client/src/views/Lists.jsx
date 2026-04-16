@@ -182,10 +182,14 @@ const Lists = () => {
 
   useEffect(() => { fetchLists(); }, [fetchLists]);
 
-  // Real-time: listen for new lists or deletions
+  // Real-time: listen for list created/deleted events
   useEffect(() => {
-    const handleNewList = (data) => {
-      if (data.user_id === user?.id) return;
+    if (!user?.id) return;
+
+    const handleListCreated = (data) => {
+      // Always re-fetch so a second open tab also sees the new list.
+      // The primary tab already has it via optimistic update — a refetch
+      // is harmless (just confirms/normalizes the data).
       fetchLists();
     };
 
@@ -193,14 +197,14 @@ const Lists = () => {
       setLists(prev => prev.filter(l => l.id !== data.list_id));
     };
 
-    socket.on('list_created', handleNewList);
+    socket.on('list_created', handleListCreated);
     socket.on('list_deleted', handleListDeleted);
 
     return () => {
-      socket.off('list_created', handleNewList);
+      socket.off('list_created', handleListCreated);
       socket.off('list_deleted', handleListDeleted);
     };
-  }, [user?.id]);
+  }, [user?.id, fetchLists]);
 
   const handleCreate = async (name) => {
     try {

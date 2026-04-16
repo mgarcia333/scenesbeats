@@ -135,38 +135,36 @@ const Community = () => {
   useEffect(() => {
     fetchData();
 
-    // Listen for real-time activities
-    socket.on('new_activity', (newAct) => {
-      console.log("📣 Real-time activity received:", newAct);
+    // ── Named handlers so socket.off only removes OUR listeners ──
+    // (anonymous functions can't be unregistered individually,
+    //  which would remove the global handlers in App.jsx too)
+    const handleNewActivity = (newAct) => {
+      console.log('📣 Real-time activity received:', newAct);
       setActivities(prev => [newAct, ...prev]);
-    });
+    };
 
-    socket.on('friend_request', (data) => {
-      console.log("👥 Friend request received:", data);
-      // We could add it manually or just re-fetch to get the full object
-      fetchData();
-    });
+    const handleFriendRequest = () => fetchData();
+    const handleFriendAccepted = () => fetchData();
 
-    socket.on('friend_accepted', (data) => {
-      console.log("✅ Friend request accepted:", data);
-      fetchData();
-    });
-
-    socket.on('user_status', (data) => {
-      console.log("📍 User status update:", data);
+    const handleUserStatus = (data) => {
       setOnlineUsers(prev => {
-        const newSet = new Set(prev);
-        if (data.status === 'online') newSet.add(data.userId.toString());
-        else newSet.delete(data.userId.toString());
-        return newSet;
+        const next = new Set(prev);
+        if (data.status === 'online') next.add(String(data.userId));
+        else next.delete(String(data.userId));
+        return next;
       });
-    });
+    };
+
+    socket.on('new_activity',   handleNewActivity);
+    socket.on('friend_request', handleFriendRequest);
+    socket.on('friend_accepted', handleFriendAccepted);
+    socket.on('user_status',    handleUserStatus);
 
     return () => {
-      socket.off('new_activity');
-      socket.off('friend_request');
-      socket.off('friend_accepted');
-      socket.off('user_status');
+      socket.off('new_activity',   handleNewActivity);
+      socket.off('friend_request', handleFriendRequest);
+      socket.off('friend_accepted', handleFriendAccepted);
+      socket.off('user_status',    handleUserStatus);
     };
   }, [user]);
 

@@ -62,22 +62,30 @@ app.post("/api/internal/broadcast", (req, res) => {
 
   console.log(`📣 Internal broadcast: ${event}`);
 
-  // If data has a recipient_id, only send to that user
   if (data.recipient_id) {
+    // ── Directed to a specific user (friend_request, friend_accepted, etc.) ──
     const socketIds = userSockets.get(String(data.recipient_id));
     if (socketIds) {
       socketIds.forEach(sid => io.to(sid).emit(event, data));
-      console.log(`   Directed to user: ${data.recipient_id} (${socketIds.size} sockets)`);
+      console.log(`   → Directed to user: ${data.recipient_id} (${socketIds.size} socket/s)`);
+    } else {
+      console.log(`   ⚠️  User ${data.recipient_id} not connected`);
     }
-  } else if (data.list_id) {
-    // Broadcast list updates to users in that list's room
+
+  } else if (event === 'list_updated' && data.list_id) {
+    // ── Item-level list changes → only users CURRENTLY viewing that list room ──
+    // (collaborators who have the ListView open)
     io.to(`list_${data.list_id}`).emit(event, data);
-    console.log(`   Broadcast to list room: list_${data.list_id}`);
+    console.log(`   → Room broadcast → list_${data.list_id}`);
+
   } else {
-    // Otherwise broadcast to all
+    // ── Everything else (list_created, list_deleted, favorite_added/removed,
+    //    new_activity, rec_generated, user_status, …) goes to ALL clients.
+    //    The frontend filters by user_id / list_id where needed. ──
     io.emit(event, data);
+    console.log(`   → Global broadcast`);
   }
-  
+
   res.json({ success: true });
 });
 
