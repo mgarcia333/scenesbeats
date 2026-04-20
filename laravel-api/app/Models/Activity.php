@@ -32,7 +32,15 @@ class Activity extends Model
     protected static function booted()
     {
         static::created(function ($activity) {
-            NodeBroadcaster::broadcast('new_activity', $activity->load('user')->toArray());
+            try {
+                // Ensure user is loaded for the activity feed UI
+                if (!$activity->relationLoaded('user')) {
+                    $activity->load('user');
+                }
+                NodeBroadcaster::broadcast('new_activity', $activity->toArray());
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Activity Broadcast Error: " . $e->getMessage());
+            }
         });
     }
 }

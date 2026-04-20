@@ -45,21 +45,23 @@ class MediaListController extends Controller
             'is_public' => $request->is_public ?? true
         ]);
 
-        // Create activity
+        // Create activity linked to the list
         Activity::create([
-            'user_id' => $request->user_id,
-            'type' => 'list_created',
-            'data' => [
-                'list_id' => $list->id,
+            'user_id'      => $request->user_id,
+            'type'         => 'list_created',
+            'subject_id'   => $list->id,
+            'subject_type' => MediaList::class,
+            'data'         => [
+                'list_id'   => $list->id,
                 'list_name' => $list->name
             ]
         ]);
 
-        // Broadcast new list to other users
+        // Broadcast new list to other users (the Activity observer also sends 'new_activity')
         NodeBroadcaster::broadcast('list_created', [
             'list_id' => $list->id,
             'user_id' => $list->user_id,
-            'name' => $list->name
+            'name'    => $list->name
         ]);
 
         return response()->json($list, 201);
@@ -150,10 +152,12 @@ class MediaListController extends Controller
             $list->save();
         }
 
-        // Create activity for item added to list
+        // Create activity linked correctly
         Activity::create([
-            'user_id' => $list->user_id,
-            'type' => 'item_added_to_list',
+            'user_id'      => $list->user_id,
+            'type'         => 'item_added_to_list',
+            'subject_id'   => $item->id,
+            'subject_type' => MediaListItem::class,
             'data' => [
                 'list_id'    => $list->id,
                 'list_name'  => $list->name,

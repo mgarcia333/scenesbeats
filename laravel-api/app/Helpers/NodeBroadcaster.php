@@ -13,7 +13,12 @@ class NodeBroadcaster
     public static function broadcast(string $event, array $data)
     {
         try {
-            $nodeUrl = env('NODE_API_URL', 'http://127.0.0.1:5000');
+            $nodeUrl = config('services.node.url');
+            if (!$nodeUrl) {
+                Log::warning("Node Broadcaster: NODE_API_URL not set.");
+                return;
+            }
+
             Http::post("{$nodeUrl}/api/internal/broadcast", [
                 'event' => $event,
                 'data' => $data
